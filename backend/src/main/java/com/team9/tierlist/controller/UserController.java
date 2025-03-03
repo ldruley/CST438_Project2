@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 
 import com.team9.tierlist.model.User;
+import com.team9.tierlist.service.UserService;
 
 @RestController
 @RequestMapping("/api/users")
