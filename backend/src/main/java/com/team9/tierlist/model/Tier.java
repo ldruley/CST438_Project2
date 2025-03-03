@@ -11,6 +11,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.persistence.Column;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -28,6 +29,7 @@ public class Tier {
 
     private String color;
 
+    @Column(name = "tier_rank") // we need to use this because rank is a reserved keyword in SQL
     private Integer rank;
 
     private String description;
