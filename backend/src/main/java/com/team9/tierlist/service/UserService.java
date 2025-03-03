@@ -53,24 +53,19 @@ public class UserService {
             updatedUser.setUsername(user.getUsername());
             updatedUser.setEmail(user.getEmail());
             updatedUser.setPassword(user.getPassword());
-            updatedUser.setRoles(user.getRoles());
+            updatedUser.setAdmin(user.isAdmin());
             return userRepository.save(updatedUser);
         }
         return null;
     }
 
     @Transactional
-    public void deleteUser(Long id) {
-        userRepository.deleteById(id);
-    }
+    public boolean deleteUser(Long id) {
 
-    @Transactional
-    public void deleteUserByUsername(String username) {
-        userRepository.deleteByUsername(username);
-    }
-
-    @Transactional
-    public void deleteUserByUser(User user) {
-        userRepository.delete(user);
+        if (userRepository.existsById(id)) {
+            userRepository.deleteById(id);
+            return true;
+        }
+        return false;
     }
 }

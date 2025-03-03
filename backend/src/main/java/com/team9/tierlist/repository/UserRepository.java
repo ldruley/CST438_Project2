@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import com.team9.tierlist.model.User;
 
 @Repository
-public interface UserRepository extends JpaRepository<Item, Long> {
+public interface UserRepository extends JpaRepository<User, Long> {
 
     // Find all users
     List<User> findAll();
