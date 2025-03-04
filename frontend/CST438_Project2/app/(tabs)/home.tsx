@@ -1,30 +1,32 @@
-import {Image, StyleSheet, Platform, View, TextInput, TouchableOpacity, Text} from 'react-native';
+import {StyleSheet, Image, Platform, View, Text, TextInput, TouchableOpacity} from 'react-native';
 
-import { HelloWave } from '@/components/HelloWave';
+import { Collapsible } from '@/components/Collapsible';
+import { ExternalLink } from '@/components/ExternalLink';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { IconSymbol } from '@/components/ui/IconSymbol';
 import {useState} from "react";
 
-export default function HomeScreen() {
+export default function TabTwoScreen() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
   return (
       <View style={styles.container}>
-          <Text style={styles.title}>Create Account </Text>
+          <Text style={styles.title}>Log In</Text>
 
           <TextInput
-              placeholder="Username"
               style={styles.input}
+              placeholder="Username"
               placeholderTextColor="#aaa"
               value={username}
               onChangeText={setUsername}
           />
 
           <TextInput
-              placeholder="Password"
               style={styles.input}
+              placeholder="Password"
               placeholderTextColor="#aaa"
               secureTextEntry
               value={password}
@@ -32,11 +34,11 @@ export default function HomeScreen() {
           />
 
           <TouchableOpacity style={styles.button} >
-              <Text style={styles.buttonText}>Sign Up</Text>
+              <Text style={styles.buttonText}>Log In</Text>
           </TouchableOpacity>
       </View>
 
-);
+  );
 }
 
 const styles = StyleSheet.create({
