@@ -23,6 +23,19 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	runtimeOnly 'mysql:mysql-connector-java:8.0.33'
+
+	// OAuth2 client support for integrating with third-party authentication providers (e.g., Google, Facebook).
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+    // Spring Security starter, provides authentication, authorization, and security mechanisms.
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    // Lombok (compile-time only), used to reduce boilerplate code like getters, setters, constructors.
+    compileOnly 'org.projectlombok:lombok'
+
+    // Annotation processor for Lombok, required to generate code at compile-time.
+    annotationProcessor 'org.projectlombok:lombok'
 
 	// Database
 	runtimeOnly 'com.mysql:mysql-connector-j'

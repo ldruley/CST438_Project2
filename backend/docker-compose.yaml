@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+  db:
+    hostname: mysql
+    image: mysql:8.0.23
+    restart: always
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+    ports:
+      - 3306:3306
+    networks:
+      - mysql_network
+
+  adminer:
+    hostname: adminer
+    image: adminer
+    restart: always
+    ports:
+      - 8580:8080
+    networks:
+      - mysql_network
+
+volumes:
+  db_data:
+
+networks:
+  mysql_network:
+    driver: bridge
