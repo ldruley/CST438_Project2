@@ -8,6 +8,9 @@
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "extra": {
+      "oauthClientId": "OAUTH_CLIENT_ID"
+    },
     "ios": {
       "supportsTablet": true
     },
