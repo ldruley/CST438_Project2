@@ -39,7 +39,7 @@ const tierList: React.FC<tierListProps> = (tierListProps ) => {
       <Text style={styles.tierTitle}>{tiers[index]}</Text>
       
       {tierListProps[tiers[index] as keyof tierListProps].map((_, innerIndex) => (
-      <View key={innerIndex} style={styles.tierObject} />
+      <Text key={innerIndex} style={styles.tierObject}>{tierListProps[tiers[index] as keyof tierListProps][innerIndex]}</Text>
       ))}
     </View>
   ))}
@@ -70,11 +70,12 @@ const styles = StyleSheet.create({
         padding: 10,
       },
       tierObject: {
-        width: "5%", // 5% of the tier's width
+        width: "15%", // 5% of the tier's width
         height: "14%", // Scaled height to fit nicely
         backgroundColor: '#ff5555', // Red for visibility
         borderRadius: 10,
         padding:10,
+        fontSize:6,
         
       },
 });

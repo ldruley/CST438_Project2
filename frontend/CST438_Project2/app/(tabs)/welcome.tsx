@@ -35,7 +35,8 @@ const mainTier: React.FC=() => {
         ...prev,
         [tier]: [...(prev[tier] || []), tierItem]
       }));
-      console.log(tierListProps.Splus)
+      setTierItem(""); // Reset the input field
+      console.log(tierListProps[tier]); // Log the updated tier list
       // Reset the input field
       setTierItem("");
     // }
@@ -61,7 +62,9 @@ const mainTier: React.FC=() => {
         style={styles.input}
         placeholder="Enter Item"
         placeholderTextColor="#aaa"
-        // value={tierItem}
+        key = "ItemInput"
+        onChange={(event) => setTierItem(event.nativeEvent.text)}
+        value={tierItem}
         
         
       />
