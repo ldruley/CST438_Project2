@@ -1,10 +1,12 @@
-FROM gradle:jdk21
+FROM gradle:jdk21 as build
 WORKDIR /app
-
-COPY build/libs/*.jar app.jar
 COPY . .
 RUN chmod +x ./gradlew
-RUN ./gradlew assemble --no-daemon
+RUN ./gradlew bootJar --no-daemon
 
-# Set the command to run the application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+FROM openjdk:21-slim
+WORKDIR /app
+COPY --from=build /app/build/libs/app.jar .
+
+# Heroku uses the CMD to start the application
+CMD ["java", "-Dserver.port=${PORT}", "-jar", "app.jar"]

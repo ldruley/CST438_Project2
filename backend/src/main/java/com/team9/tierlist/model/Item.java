@@ -32,8 +32,7 @@ public class Item {
     private Tier tier;
 
     // Default constructor
-    public Item() {
-    }
+    public Item() {}
 
     // Constructor with required fields
     public Item(String name) {

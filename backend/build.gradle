@@ -37,3 +37,12 @@ dependencies {
 test {
 	useJUnitPlatform()
 }
+
+// Add a task for Heroku deployment
+task stage(dependsOn: ['build', 'clean'])
+build.mustRunAfter clean
+
+// Create a jar with all dependencies
+bootJar {
+	archiveFileName = "app.jar"
+}
