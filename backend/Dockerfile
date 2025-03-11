@@ -8,5 +8,9 @@ FROM openjdk:21-slim
 WORKDIR /app
 COPY --from=build /app/build/libs/app.jar .
 
+# For local Docker and Heroku
+EXPOSE 8080
+
 # Heroku uses the CMD to start the application
-CMD ["java", "-Dserver.port=${PORT}", "-jar", "app.jar"]
+# Use a shell form of CMD to allow environment variable substitution
+CMD java -jar app.jar

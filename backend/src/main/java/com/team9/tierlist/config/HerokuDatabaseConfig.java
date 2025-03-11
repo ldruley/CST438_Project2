@@ -2,6 +2,8 @@ package com.team9.tierlist.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.boot.web.server.WebServerFactoryCustomizer;
+import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -16,6 +18,18 @@ public class HerokuDatabaseConfig {
 
     @Value("${JAWSDB_MARIA_URL:}")
     private String databaseUrl;
+
+    @Value("${spring.datasource.url:}")
+    private String defaultDbUrl;
+
+    @Value("${spring.datasource.username:}")
+    private String defaultUsername;
+
+    @Value("${spring.datasource.password:}")
+    private String defaultPassword;
+
+    @Value("${spring.datasource.driver-class-name:}")
+    private String defaultDriver;
 
     @Bean
     @Primary
@@ -41,7 +55,25 @@ public class HerokuDatabaseConfig {
             }
         }
 
-        // Return null to let Spring use the application.properties configuration
-        return null;
+        // If JAWSDB_MARIA_URL is not available, use the default database configuration
+        return DataSourceBuilder.create()
+                .url(defaultDbUrl)
+                .username(defaultUsername)
+                .password(defaultPassword)
+                .driverClassName(defaultDriver)
+                .build();
+    }
+
+    /**
+     * Configure port for Heroku
+     */
+    @Bean
+    public WebServerFactoryCustomizer<ConfigurableServletWebServerFactory> webServerFactoryCustomizer() {
+        return factory -> {
+            String port = System.getenv("PORT");
+            if (port != null && !port.isEmpty()) {
+                factory.setPort(Integer.parseInt(port));
+            }
+        };
     }
 }
