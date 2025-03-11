@@ -3,7 +3,7 @@ import { Picker } from '@react-native-picker/picker';
 import { FunctionComponent  } from 'react';
 import React from 'react';
 import {useState} from "react";
-import TierList from '@/app/(tabs)/TierList';
+import TierList from '@/app/TierList';
 // import { Collapsible } from '@/components/Collapsible';
 // import { ExternalLink } from '@/components/ExternalLink';
 // import ParallaxScrollView from '@/components/ParallaxScrollView';
