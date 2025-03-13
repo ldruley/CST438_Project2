@@ -129,45 +129,6 @@ public class ItemService {
         return null;
     }
 
-    @Transactional
-    public List<Item> reorderItems(Long tierId, Long itemId, Integer newRank) {
-        Optional<Item> itemOpt = itemRepository.findById(itemId);
-        if (itemOpt.isPresent() && itemOpt.get().getTier().getId().equals(tierId)) {
-            Item item = itemOpt.get();
-            Integer oldRank = item.getRank();
-
-            // Get all items in this tier
-            List<Item> tierItems = itemRepository.findByTierIdOrderByRankAsc(tierId);
-
-            // Update ranks for affected items
-            if (oldRank < newRank) {
-                // Moving down: decrement ranks of items between old and new positions
-                for (Item i : tierItems) {
-                    if (i.getRank() > oldRank && i.getRank() <= newRank && !i.getId().equals(itemId)) {
-                        i.setRank(i.getRank() - 1);
-                        itemRepository.save(i);
-                    }
-                }
-            } else if (oldRank > newRank) {
-                // Moving up: increment ranks of items between new and old positions
-                for (Item i : tierItems) {
-                    if (i.getRank() >= newRank && i.getRank() < oldRank && !i.getId().equals(itemId)) {
-                        i.setRank(i.getRank() + 1);
-                        itemRepository.save(i);
-                    }
-                }
-            }
-
-            // Update the target item's rank
-            item.setRank(newRank);
-            itemRepository.save(item);
-
-            // Return the updated list
-            return itemRepository.findByTierIdOrderByRankAsc(tierId);
-        }
-        return null;
-    }
-
     public long countItemsInTier(Long tierId) {
         return itemRepository.countByTierId(tierId);
     }

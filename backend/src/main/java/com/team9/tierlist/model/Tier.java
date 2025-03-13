@@ -34,7 +34,7 @@ public class Tier {
 
     @ManyToOne
     @JoinColumn(name = "user_id")
-    @JsonIgnoreProperties({"password"})
+    @JsonIgnoreProperties({"password", "tiers"})
     private User user;
 
     @OneToMany(mappedBy = "tier")

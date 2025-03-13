@@ -100,17 +100,4 @@ public class ItemController {
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
-
-    @PutMapping("/tier/{tierId}/reorder")
-    public ResponseEntity<?> reorderItemsInTier(
-            @PathVariable Long tierId,
-            @RequestParam Long itemId,
-            @RequestParam Integer newRank) {
-
-        List<Item> reorderedItems = itemService.reorderItems(tierId, itemId, newRank);
-        if (reorderedItems != null) {
-            return new ResponseEntity<>(reorderedItems, HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    }
 }
