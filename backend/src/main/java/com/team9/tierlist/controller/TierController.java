@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.team9.tierlist.model.Tier;
+import com.team9.tierlist.model.Item;
 import com.team9.tierlist.service.ItemService;
 import com.team9.tierlist.service.TierService;
 
@@ -82,6 +83,17 @@ public class TierController {
         if (updatedTier != null) {
             return new ResponseEntity<>(updatedTier, HttpStatus.OK);
         }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    @GetMapping("/{id}/ranks")
+    public ResponseEntity<?> getItemsByRank(@PathVariable Long id) {
+        Map<Integer, List<Map<String, Object>>> itemsByRank = tierService.getItemsByRank(id);
+
+        if (itemsByRank != null) {
+            return new ResponseEntity<>(itemsByRank, HttpStatus.OK);
+        }
+
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 

@@ -22,26 +22,64 @@ public class ItemService {
     @Autowired
     private TierRepository tierRepository;
 
+    /**
+     * Retrieves all items from the database.
+     *
+     * @return List of all items
+     */
     public List<Item> getAllItems() {
         return itemRepository.findAll();
     }
 
+    /**
+     * Finds an item by its ID.
+     *
+     * @param id The item ID
+     * @return An Optional containing the item if found, or empty if not found
+     */
     public Optional<Item> getItemById(Long id) {
         return itemRepository.findById(id);
     }
 
+    /**
+     * Retrieves all items in a specific tier, ordered by their rank.
+     *
+     * @param tierId The ID of the tier
+     * @return List of items in the tier, ordered by rank ascending
+     */
     public List<Item> getItemsByTierId(Long tierId) {
         return itemRepository.findByTierIdOrderByRankAsc(tierId);
     }
 
+    /**
+     * Searches for items by name (case insensitive, partial match).
+     *
+     * @param name The name or part of the name to search for
+     * @return List of items matching the search criteria
+     */
     public List<Item> searchItemsByName(String name) {
         return itemRepository.findByNameContainingIgnoreCase(name);
     }
 
+    /**
+     * Finds an item by its tier ID and rank.
+     *
+     * @param tierId The ID of the tier
+     * @param rank The rank within the tier
+     * @return The item at the specified rank in the tier, or null if not found
+     */
     public Item getItemByTierIdAndRank(Long tierId, Integer rank) {
         return itemRepository.findByTierIdAndRank(tierId, rank);
     }
 
+    /**
+     * Creates a new item and associates it with a tier.
+     * If no rank is provided, assigns the item to the end of the tier.
+     *
+     * @param item The item entity to create
+     * @param tierId The ID of the tier to which the item will belong
+     * @return The created item with ID assigned
+     */
     @Transactional
     public Item createItem(Item item, Long tierId) {
         if (tierId != null) {
@@ -60,6 +98,13 @@ public class ItemService {
         return itemRepository.save(item);
     }
 
+    /**
+     * Updates an existing item, handling tier changes and rank adjustments as needed.
+     *
+     * @param id The ID of the item to update
+     * @param itemDetails The item entity with updated values
+     * @return The updated item, or null if the item doesn't exist
+     */
     @Transactional
     public Item updateItem(Long id, Item itemDetails) {
         Optional<Item> itemOpt = itemRepository.findById(id);
@@ -90,6 +135,12 @@ public class ItemService {
         return null;
     }
 
+    /**
+     * Deletes an item by its ID.
+     *
+     * @param id The ID of the item to delete
+     * @return true if the item was successfully deleted, false if the item wasn't found
+     */
     @Transactional
     public boolean deleteItem(Long id) {
         if (itemRepository.existsById(id)) {
@@ -99,6 +150,13 @@ public class ItemService {
         return false;
     }
 
+    /**
+     * Assigns an item to a different tier, updating its rank as needed.
+     *
+     * @param itemId The ID of the item to move
+     * @param tierId The ID of the destination tier
+     * @return The updated item, or null if either the item or tier doesn't exist
+     */
     @Transactional
     public Item assignItemToTier(Long itemId, Long tierId) {
         Optional<Item> itemOpt = itemRepository.findById(itemId);
@@ -119,6 +177,14 @@ public class ItemService {
         return null;
     }
 
+
+    /**
+     * Updates an item's rank within its tier.
+     *
+     * @param itemId The ID of the item to update
+     * @param newRank The new rank to assign
+     * @return The updated item, or null if the item doesn't exist
+     */
     @Transactional
     public Item updateItemRank(Long itemId, Integer newRank) {
         Optional<Item> itemOpt = itemRepository.findById(itemId);
@@ -130,6 +196,14 @@ public class ItemService {
         return null;
     }
 
+    /**
+     * Creates multiple items at once and assigns them to a tier.
+     * Handles rank assignment for all items in the batch.
+     *
+     * @param items List of item entities to create
+     * @param tierId The ID of the tier to which the items will belong
+     * @return List of created items with IDs assigned, or null if the tier doesn't exist
+     */
     @Transactional
     public List<Item> createMultipleItems(List<Item> items, Long tierId) {
         if (tierId == null) {
@@ -164,6 +238,12 @@ public class ItemService {
         return createdItems;
     }
 
+    /**
+     * Counts the number of items in a tier.
+     *
+     * @param tierId The ID of the tier
+     * @return The number of items in the tier
+     */
     public long countItemsInTier(Long tierId) {
         return itemRepository.countByTierId(tierId);
     }
