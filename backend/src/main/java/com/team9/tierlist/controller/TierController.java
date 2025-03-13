@@ -40,6 +40,12 @@ public class TierController {
         return new ResponseEntity<>(tiers, HttpStatus.OK);
     }
 
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<Tier>> getTiersByUserId(@PathVariable Long userId) {
+        List<Tier> tiers = tierService.getTiersByUserId(userId);
+        return new ResponseEntity<>(tiers, HttpStatus.OK);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Tier> getTierById(@PathVariable Long id) {
         Optional<Tier> tier = tierService.getTierById(id);
@@ -53,26 +59,20 @@ public class TierController {
         return new ResponseEntity<>(tiers, HttpStatus.OK);
     }
 
-    @GetMapping("/rank/{rank}")
-    public ResponseEntity<Tier> getTierByRank(@PathVariable Integer rank) {
-        Tier tier = tierService.getTierByRank(rank);
-        if (tier != null) {
-            return new ResponseEntity<>(tier, HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    }
-
-    @PostMapping
-    public ResponseEntity<?> createTier(@Valid @RequestBody Tier tier) {
-        // Check if a tier with this name already exists
-        if (tierService.existsByName(tier.getName())) {
+    @PostMapping("/user/{userId}")
+    public ResponseEntity<?> createTier(@PathVariable Long userId, @Valid @RequestBody Tier tier) {
+        // Check if a tier with this name already exists for this user
+        if (tierService.existsByNameAndUserId(tier.getName(), userId)) {
             Map<String, String> error = new HashMap<>();
-            error.put("error", "A tier with name '" + tier.getName() + "' already exists");
+            error.put("error", "A tier with name '" + tier.getName() + "' already exists for this user");
             return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
         }
 
-        Tier createdTier = tierService.createTier(tier);
-        return new ResponseEntity<>(createdTier, HttpStatus.CREATED);
+        Tier createdTier = tierService.createTier(tier, userId);
+        if (createdTier != null) {
+            return new ResponseEntity<>(createdTier, HttpStatus.CREATED);
+        }
+        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
     @PutMapping("/{id}")

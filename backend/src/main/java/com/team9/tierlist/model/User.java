@@ -1,7 +1,11 @@
 package com.team9.tierlist.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Table;
@@ -9,6 +13,9 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Table(name = "users")
@@ -31,6 +38,10 @@ public class User {
 
     @NotNull(message = "Role is required")
     boolean isAdmin;
+
+    @OneToMany(mappedBy = "user")
+    @JsonIgnoreProperties("user")
+    private List<Tier> tiers = new ArrayList<>();
 
     // Default constructor
     public User() {
@@ -82,6 +93,24 @@ public class User {
 
     public void setAdmin(boolean isAdmin) {
         this.isAdmin = isAdmin;
+    }
+
+    public List<Tier> getTiers() {
+        return tiers;
+    }
+
+    public void setTiers(List<Tier> tiers) {
+        this.tiers = tiers;
+    }
+
+    public void addTier(Tier tier) {
+        tiers.add(tier);
+        tier.setUser(this);
+    }
+
+    public void removeTier(Tier tier) {
+        tiers.remove(tier);
+        tier.setUser(null);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.team9.tierlist.controller;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,6 +49,15 @@ public class ItemController {
         return new ResponseEntity<>(items, HttpStatus.OK);
     }
 
+    @GetMapping("/tier/{tierId}/rank/{rank}")
+    public ResponseEntity<Item> getItemByTierAndRank(@PathVariable Long tierId, @PathVariable Integer rank) {
+        Item item = itemService.getItemByTierIdAndRank(tierId, rank);
+        if (item != null) {
+            return new ResponseEntity<>(item, HttpStatus.OK);
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
     @PostMapping
     public ResponseEntity<Item> createItem(@Valid @RequestBody Item item) {
         return new ResponseEntity<>(itemService.createItem(item,
@@ -78,6 +88,28 @@ public class ItemController {
         Item updatedItem = itemService.assignItemToTier(itemId, tierId);
         if (updatedItem != null) {
             return new ResponseEntity<>(updatedItem, HttpStatus.OK);
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    @PutMapping("/{itemId}/rank/{rank}")
+    public ResponseEntity<Item> updateItemRank(@PathVariable Long itemId, @PathVariable Integer rank) {
+        Item updatedItem = itemService.updateItemRank(itemId, rank);
+        if (updatedItem != null) {
+            return new ResponseEntity<>(updatedItem, HttpStatus.OK);
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    @PutMapping("/tier/{tierId}/reorder")
+    public ResponseEntity<?> reorderItemsInTier(
+            @PathVariable Long tierId,
+            @RequestParam Long itemId,
+            @RequestParam Integer newRank) {
+
+        List<Item> reorderedItems = itemService.reorderItems(tierId, itemId, newRank);
+        if (reorderedItems != null) {
+            return new ResponseEntity<>(reorderedItems, HttpStatus.OK);
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
