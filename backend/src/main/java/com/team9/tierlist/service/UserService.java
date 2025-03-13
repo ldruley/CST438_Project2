@@ -10,11 +10,44 @@ import org.springframework.transaction.annotation.Transactional;
 import com.team9.tierlist.model.User;
 import com.team9.tierlist.repository.UserRepository;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import java.util.Collections;
+import java.security.GeneralSecurityException;
+import java.io.IOException;
+
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 @Service
 public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(); // Hashing utility
+    // Verify Google ID Token
+    // public boolean verifyGoogleIdToken(String idToken) {
+    //     try {
+    //         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
+    //             .setAudience(Collections.singletonList(clientId))
+    //             .build();
+    //         GoogleIdToken token = verifier.verify(idToken);
+    //         return token != null;
+    //     } catch (GeneralSecurityException | IOException e) {
+    //         return false;
+    //     }
+    // }
+
+    // // Decode Google ID Token and get user info
+    // public GoogleIdToken getGoogleIdToken(String idToken) throws GeneralSecurityException, IOException {
+    //     GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
+    //         .setAudience(Collections.singletonList(clientId))
+    //         .build();
+    //     return verifier.verify(idToken);
+    // }
 
     public List<User> getAllUsers() {
         return userRepository.findAll();
@@ -42,7 +75,24 @@ public class UserService {
 
     @Transactional
     public User createUser(User user) {
-        return userRepository.save(user);
+        //check if user exists
+    if (userRepository.existsByUsername(user.getUsername())) {
+        throw new IllegalArgumentException("Username already exists");
+    }
+
+    // Check if the email already exists
+    if (userRepository.existsByEmail(user.getEmail())) {
+        throw new IllegalArgumentException("Email already exists");
+    }
+
+        // Hash the password before saving
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+        // Ensure new users are not admins
+        user.setAdmin(false);
+
+    // If both checks pass, save the user
+    return userRepository.save(user);
     }
 
     @Transactional

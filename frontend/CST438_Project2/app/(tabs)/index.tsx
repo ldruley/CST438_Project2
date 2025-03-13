@@ -4,12 +4,13 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useAuthRequest, makeRedirectUri } from 'expo-auth-session'; 
 import { useNavigation } from '@react-navigation/native'; 
 import { router } from 'expo-router';
+import Constants from 'expo-constants';
 
 
 
 // Google OAuth Configuration
 const googleOAuthConfig = {
-  clientId: process.env.OAUTH_CLIENT_ID, 
+  clientId: Constants.manifest.extra.OAUTH_CLIENT_ID || '', 
   redirectUri: makeRedirectUri(),
   scopes: ['profile', 'email'],
 };
@@ -22,21 +23,21 @@ export default function WelcomeScreen() {
     revocationEndpoint: 'https://oauth2.googleapis.com/revoke',
   };
 
-  // const navigation = useNavigation();  // Use useNavigation hook to access navigation
+  const navigation = useNavigation();  // Use useNavigation hook to access navigation
 
-  // // Use useAuthRequest hook with both the config and discovery document
-  // const [request, response, promptAsync] = useAuthRequest(
-  //   googleOAuthConfig,
-  //   discovery
-  // );
+  // Use useAuthRequest hook with both the config and discovery document
+  const [request, response, promptAsync] = useAuthRequest(
+    googleOAuthConfig,
+    discovery
+  );
 
-  // // Handle OAuth2 response
-  // useEffect(() => {
-  //   if (response?.type === 'success') {
-  //     const userInfo = response.params;
-  //     console.log('User Info:', userInfo); // Handle user info or send to backend
-  //   }
-  // }, [response]);
+  // Handle OAuth2 response
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const userInfo = response.params;
+      console.log('User Info:', userInfo); // Handle user info or send to backend
+    }
+  }, [response]);
 
   return (
     <LinearGradient colors={['#000000', '#808080']} style={styles.container}>
@@ -45,15 +46,14 @@ export default function WelcomeScreen() {
         <Text style={styles.subtitle}>Login or create an account to continue</Text>
 
         {/* OAuth Login Button */}
-        {/* <TouchableOpacity style={styles.button} onPress={() => promptAsync()}> */}
-        <TouchableOpacity style={styles.button}>
+        <TouchableOpacity style={styles.button} onPress={() => promptAsync()}>
           <Text style={styles.buttonText}>Login with Google</Text>
         </TouchableOpacity>
 
         {/* Create Account Button */}
         <TouchableOpacity 
           style={[styles.button, styles.createAccountButton]} 
-          onPress={() =>router.replace('/(tabs)/createAccount')} 
+          onPress={() =>router.replace('/')} 
         >
           <Text style={styles.buttonText}>Create Account</Text>
         </TouchableOpacity>
