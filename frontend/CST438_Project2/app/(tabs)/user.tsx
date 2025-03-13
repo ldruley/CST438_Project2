@@ -31,27 +31,31 @@ export default function TabTwoScreen() {
     const [email,setEmail]= useState('');
     const [userObject,setUserObject]= useState([]); //for print all users
 
-    //cors stuff?
+
     const [data, setData] = useState(null);
 
-    useEffect(() => {
-
-        fetch("http://localhost:8080/api/users", {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            credentials: "include",
-            mode: 'cors'  // Ensure that CORS is enabled
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                setData(data);
-            })
-            .catch((error) => {
-                console.error("Error:", error);
+    const fetchUsers = async () => {
+        try {
+            const response = await fetch("http://localhost:8080/api/users", {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                mode: "cors",  // Ensure that CORS is enabled
             });
-    }, []);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Fetched Users:", data); // Print to console
+            setData(data); // Store in state
+        } catch (error) {
+            console.error("Error fetching users:", error);
+        }
+    };
+
 
     const handleConfirmName = async () =>{
         //call back end: updateUser
@@ -97,7 +101,7 @@ export default function TabTwoScreen() {
 
     const handleAdminViewAll = async ()=>{
         //call backend: getAllUsers
-
+        await fetchUsers();
         console.log("showing all users!");
     }
     const handleAdminCreate = async () => {
@@ -122,7 +126,6 @@ export default function TabTwoScreen() {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify(newUser),
-                credentials: "include",
                 mode: "cors", // Ensure CORS is enabled
             });
 

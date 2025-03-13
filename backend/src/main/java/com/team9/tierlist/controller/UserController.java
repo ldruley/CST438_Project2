@@ -15,7 +15,6 @@ import com.team9.tierlist.model.User;
 import com.team9.tierlist.service.UserService;
 
 @RestController
-@CrossOrigin
 @RequestMapping("/api/users")
 public class UserController {
 
