@@ -84,6 +84,30 @@ public class TierController {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
+    @PatchMapping("/{id}")
+    public ResponseEntity<?> patchTier(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
+        // Check if a tier with this name already exists for this user if name is being updated
+        if (updates.containsKey("name")) {
+            Optional<Tier> existingTier = tierService.getTierById(id);
+            if (existingTier.isPresent() &&
+                    !existingTier.get().getName().equals(updates.get("name")) &&
+                    tierService.existsByNameAndUserId((String) updates.get("name"), existingTier.get().getUser().getId())) {
+
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "A tier with name '" + updates.get("name") + "' already exists for this user");
+                return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+            }
+        }
+
+        Tier patchedTier = tierService.patchTier(id, updates);
+
+        if (patchedTier != null) {
+            return new ResponseEntity<>(patchedTier, HttpStatus.OK);
+        }
+
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteTier(@PathVariable Long id) {
         // Check if tier has items

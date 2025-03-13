@@ -64,6 +64,31 @@ public class TierService {
     }
 
     @Transactional
+    public Tier patchTier(Long id, Map<String, Object> updates) {
+        Optional<Tier> tierOpt = tierRepository.findById(id);
+        if (tierOpt.isPresent()) {
+            Tier tier = tierOpt.get();
+
+            // Apply only the fields that are present in the updates map
+            if (updates.containsKey("name")) {
+                tier.setName((String) updates.get("name"));
+            }
+
+            if (updates.containsKey("color")) {
+                tier.setColor((String) updates.get("color"));
+            }
+
+            if (updates.containsKey("description")) {
+                tier.setDescription((String) updates.get("description"));
+            }
+
+            return tierRepository.save(tier);
+        }
+        return null;
+    }
+
+
+    @Transactional
     public boolean deleteTier(Long id) {
         if (tierRepository.existsById(id)) {
             tierRepository.deleteById(id);
