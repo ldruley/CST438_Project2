@@ -2,6 +2,7 @@ package com.team9.tierlist.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.ArrayList;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -127,6 +128,40 @@ public class ItemService {
             return itemRepository.save(item);
         }
         return null;
+    }
+
+    @Transactional
+    public List<Item> createMultipleItems(List<Item> items, Long tierId) {
+        if (tierId == null) {
+            return null;
+        }
+
+        Optional<Tier> tierOpt = tierRepository.findById(tierId);
+        if (!tierOpt.isPresent()) {
+            return null;
+        }
+
+        Tier tier = tierOpt.get();
+
+        // Get current count of items in this tier to start assigning ranks
+        long currentCount = itemRepository.countByTierId(tierId);
+
+        // Process all items
+        List<Item> createdItems = new ArrayList<>();
+
+        for (int i = 0; i < items.size(); i++) {
+            Item item = items.get(i);
+            item.setTier(tier);
+
+            // Assign rank if not provided
+            if (item.getRank() == null) {
+                item.setRank((int)currentCount + i + 1);
+            }
+
+            createdItems.add(itemRepository.save(item));
+        }
+
+        return createdItems;
     }
 
     public long countItemsInTier(Long tierId) {

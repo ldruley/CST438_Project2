@@ -100,4 +100,23 @@ public class ItemController {
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
+
+    @PostMapping("/tier/{tierId}/batch")
+    public ResponseEntity<?> createMultipleItems(
+            @PathVariable Long tierId,
+            @Valid @RequestBody List<Item> items) {
+
+        List<Item> createdItems = itemService.createMultipleItems(items, tierId);
+
+        if (createdItems != null && !createdItems.isEmpty()) {
+            return new ResponseEntity<>(createdItems, HttpStatus.CREATED);
+        } else if (createdItems != null) {
+            return new ResponseEntity<>(createdItems, HttpStatus.CREATED);
+        }
+
+        return new ResponseEntity<>(
+                Map.of("error", "Could not create items. Tier may not exist."),
+                HttpStatus.BAD_REQUEST
+        );
+    }
 }
