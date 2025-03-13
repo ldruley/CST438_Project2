@@ -7,11 +7,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import jakarta.persistence.Column;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -29,10 +30,12 @@ public class Tier {
 
     private String color;
 
-    @Column(name = "tier_rank") // we need to use this because rank is a reserved keyword in SQL
-    private Integer rank;
-
     private String description;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    @JsonIgnoreProperties({"password", "tiers"})
+    private User user;
 
     @OneToMany(mappedBy = "tier")
     @JsonIgnoreProperties("tier")
@@ -43,17 +46,17 @@ public class Tier {
     }
 
     // Constructor with required fields
-    public Tier(String name, Integer rank) {
+    public Tier(String name, User user) {
         this.name = name;
-        this.rank = rank;
+        this.user = user;
     }
 
     // Full constructor
-    public Tier(String name, String color, Integer rank, String description) {
+    public Tier(String name, String color, String description, User user) {
         this.name = name;
         this.color = color;
-        this.rank = rank;
         this.description = description;
+        this.user = user;
     }
 
     // Getters and Setters
@@ -81,20 +84,20 @@ public class Tier {
         this.color = color;
     }
 
-    public Integer getRank() {
-        return rank;
-    }
-
-    public void setRank(Integer rank) {
-        this.rank = rank;
-    }
-
     public String getDescription() {
         return description;
     }
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public List<Item> getItems() {
@@ -117,6 +120,6 @@ public class Tier {
 
     @Override
     public String toString() {
-        return "Tier [id=" + id + ", name=" + name + ", rank=" + rank + ", color=" + color + "]";
+        return "Tier [id=" + id + ", name=" + name + ", color=" + color + ", user=" + (user != null ? user.getUsername() : "none") + "]";
     }
 }

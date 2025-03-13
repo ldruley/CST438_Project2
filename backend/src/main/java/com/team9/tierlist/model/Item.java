@@ -7,6 +7,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Column;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -24,7 +25,8 @@ public class Item {
     @Size(max = 100, message = "Item name cannot exceed 100 characters")
     private String name;
 
-    private String imageUrl;
+    @Column(name = "item_rank")
+    private Integer rank;
 
     @ManyToOne
     @JoinColumn(name = "tier_id")
@@ -32,7 +34,8 @@ public class Item {
     private Tier tier;
 
     // Default constructor
-    public Item() {}
+    public Item() {
+    }
 
     // Constructor with required fields
     public Item(String name) {
@@ -40,10 +43,10 @@ public class Item {
     }
 
     // Full constructor
-    public Item(String name, String imageUrl, Tier tier) {
+    public Item(String name, Tier tier, Integer rank) {
         this.name = name;
-        this.imageUrl = imageUrl;
         this.tier = tier;
+        this.rank = rank;
     }
 
     // Getters and Setters
@@ -63,14 +66,6 @@ public class Item {
         this.name = name;
     }
 
-    public String getImageUrl() {
-        return imageUrl;
-    }
-
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
-    }
-
     public Tier getTier() {
         return tier;
     }
@@ -79,8 +74,16 @@ public class Item {
         this.tier = tier;
     }
 
+    public Integer getRank() {
+        return rank;
+    }
+
+    public void setRank(Integer rank) {
+        this.rank = rank;
+    }
+
     @Override
     public String toString() {
-        return "Item [id=" + id + ", name=" + name + ", tier=" + (tier != null ? tier.getName() : "none") + "]";
+        return "Item [id=" + id + ", name=" + name + ", rank=" + rank + ", tier=" + (tier != null ? tier.getName() : "none") + "]";
     }
 }

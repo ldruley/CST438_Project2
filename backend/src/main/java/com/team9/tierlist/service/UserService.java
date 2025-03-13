@@ -60,6 +60,34 @@ public class UserService {
     }
 
     @Transactional
+    public User patchUser(Long id, Map<String, Object> updates) {
+        Optional<User> userOpt = userRepository.findById(id);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+
+            // Apply only the fields that are present in the updates map
+            if (updates.containsKey("username")) {
+                user.setUsername((String) updates.get("username"));
+            }
+
+            if (updates.containsKey("email")) {
+                user.setEmail((String) updates.get("email"));
+            }
+
+            if (updates.containsKey("password")) {
+                user.setPassword((String) updates.get("password"));
+            }
+
+            if (updates.containsKey("isAdmin")) {
+                user.setAdmin((Boolean) updates.get("isAdmin"));
+            }
+
+            return userRepository.save(user);
+        }
+        return null;
+    }
+
+    @Transactional
     public boolean deleteUser(Long id) {
 
         if (userRepository.existsById(id)) {

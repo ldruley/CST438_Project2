@@ -8,7 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.team9.tierlist.model.Tier;
+import com.team9.tierlist.model.User;
 import com.team9.tierlist.repository.TierRepository;
+import com.team9.tierlist.repository.UserRepository;
 
 @Service
 public class TierService {
@@ -16,8 +18,11 @@ public class TierService {
     @Autowired
     private TierRepository tierRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
     public List<Tier> getAllTiers() {
-        return tierRepository.findAllByOrderByRankAsc();
+        return tierRepository.findAll();
     }
 
     public Optional<Tier> getTierById(Long id) {
@@ -28,19 +33,20 @@ public class TierService {
         return tierRepository.findByNameContainingIgnoreCase(name);
     }
 
-    public Tier getTierByRank(Integer rank) {
-        return tierRepository.findByRank(rank);
+    public List<Tier> getTiersByUserId(Long userId) {
+        return tierRepository.findByUserId(userId);
     }
 
     @Transactional
-    public Tier createTier(Tier tier) {
-        // Handle rank assignment if not provided
-        if (tier.getRank() == null) {
-            // Find the highest rank and add 1
-            long count = tierRepository.count();
-            tier.setRank((int) count + 1);
+    public Tier createTier(Tier tier, Long userId) {
+        if (userId != null) {
+            Optional<User> userOpt = userRepository.findById(userId);
+            if (userOpt.isPresent()) {
+                tier.setUser(userOpt.get());
+                return tierRepository.save(tier);
+            }
         }
-        return tierRepository.save(tier);
+        return null;
     }
 
     @Transactional
@@ -52,15 +58,35 @@ public class TierService {
             tier.setColor(tierDetails.getColor());
             tier.setDescription(tierDetails.getDescription());
 
-            // Handle rank changes if necessary
-            if (tierDetails.getRank() != null && !tierDetails.getRank().equals(tier.getRank())) {
-                tier.setRank(tierDetails.getRank());
+            return tierRepository.save(tier);
+        }
+        return null;
+    }
+
+    @Transactional
+    public Tier patchTier(Long id, Map<String, Object> updates) {
+        Optional<Tier> tierOpt = tierRepository.findById(id);
+        if (tierOpt.isPresent()) {
+            Tier tier = tierOpt.get();
+
+            // Apply only the fields that are present in the updates map
+            if (updates.containsKey("name")) {
+                tier.setName((String) updates.get("name"));
+            }
+
+            if (updates.containsKey("color")) {
+                tier.setColor((String) updates.get("color"));
+            }
+
+            if (updates.containsKey("description")) {
+                tier.setDescription((String) updates.get("description"));
             }
 
             return tierRepository.save(tier);
         }
         return null;
     }
+
 
     @Transactional
     public boolean deleteTier(Long id) {
@@ -71,7 +97,7 @@ public class TierService {
         return false;
     }
 
-    public boolean existsByName(String name) {
-        return tierRepository.existsByNameIgnoreCase(name);
+    public boolean existsByNameAndUserId(String name, Long userId) {
+        return tierRepository.existsByNameIgnoreCaseAndUserId(name, userId);
     }
 }
