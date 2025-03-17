@@ -11,11 +11,44 @@ import org.springframework.transaction.annotation.Transactional;
 import com.team9.tierlist.model.User;
 import com.team9.tierlist.repository.UserRepository;
 
+
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.beans.factory.annotation.Value;
+
 @Service
 public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+        
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(); 
+
+    @Value("${admin.username}")
+    private String adminUsername;
+
+    @Value("${admin.password}")
+    private String adminPassword;
+        // Verify Google ID Token
+    // public boolean verifyGoogleIdToken(String idToken) {
+    //     try {
+    //         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
+    //             .setAudience(Collections.singletonList(clientId))
+    //             .build();
+    //         GoogleIdToken token = verifier.verify(idToken);
+    //         return token != null;
+    //     } catch (GeneralSecurityException | IOException e) {
+    //         return false;
+    //     }
+    // }
+
+    // // Decode Google ID Token and get user info
+    // public GoogleIdToken getGoogleIdToken(String idToken) throws GeneralSecurityException, IOException {
+    //     GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
+    //         .setAudience(Collections.singletonList(clientId))
+    //         .build();
+    //     return verifier.verify(idToken);
+    // }
 
     /**
      * Retrieves all users from the database.
@@ -77,6 +110,32 @@ public class UserService {
         return userRepository.existsByEmail(email);
     }
 
+    
+    /**
+     * Creates a default admin if one doesn't already exist.
+     */
+    @Transactional
+    public void createDefaultAdmin() {
+        // Check if an admin exists
+        if (userRepository.existsByIsAdminTrue()) {
+            return;  // Admin already exists
+        }
+
+        if (adminPassword == null || adminPassword.isEmpty()) {
+            throw new IllegalArgumentException("Admin password not set in environment variables");
+        }
+
+        // Create the admin user
+        User admin = new User();
+        admin.setUsername(adminUsername);
+        admin.setEmail("admin@example.com");
+        admin.setPassword(passwordEncoder.encode(adminPassword));  // Hash the password
+        admin.setAdmin(true);
+
+        // Save the admin user
+        userRepository.save(admin);
+    }
+
     /**
      * Creates a new user.
      *
@@ -85,7 +144,24 @@ public class UserService {
      */
     @Transactional
     public User createUser(User user) {
-        return userRepository.save(user);
+        //check if user exists
+    if (userRepository.existsByUsername(user.getUsername())) {
+        throw new IllegalArgumentException("Username already exists");
+    }
+
+    // Check if the email already exists
+    if (userRepository.existsByEmail(user.getEmail())) {
+        throw new IllegalArgumentException("Email already exists");
+    }
+
+        // Hash the password before saving
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+        // Ensure new users are not admins
+        user.setAdmin(false);
+
+    // If both checks pass, save the user
+    return userRepository.save(user);
     }
 
     /**
@@ -160,4 +236,18 @@ public class UserService {
         }
         return false;
     }
+
+        /**
+     * Logs out a user.
+     *
+     * @param id The ID of the user to log out
+     * @return true if the user was successfully logged out, false if the user wasn't found
+     */
+    @Transactional
+    public boolean logoutUser(Long id) {
+        
+        return true;
+    }
+
+
 }

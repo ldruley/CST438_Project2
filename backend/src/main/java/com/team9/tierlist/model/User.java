@@ -14,8 +14,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import jakarta.persistence.Column;
 
 @Entity
 @Table(name = "users")
@@ -26,6 +27,7 @@ public class User {
 
     @NotBlank(message = "Username is required")
     @Size(max = 50, message = "Username cannot exceed 50 characters")
+    @Column(unique = true)
     private String username;
 
     @NotBlank(message = "Password is required")
@@ -34,6 +36,7 @@ public class User {
 
     @Email(message = "Email should be valid")
     @Size(max = 100, message = "Email cannot exceed 100 characters")
+    @Column(unique = true)
     private String email;
 
     @NotNull(message = "Role is required")

@@ -1,16 +1,30 @@
-FROM gradle:jdk21 as build
-WORKDIR /app
-COPY . .
-RUN chmod +x ./gradlew
-RUN ./gradlew bootJar --no-daemon
+# syntax=docker/dockerfile:1
 
-FROM openjdk:21-slim
-WORKDIR /app
-COPY --from=build /app/build/libs/app.jar .
+# Stage 1: Build the application
+FROM gradle:8.5-jdk21 AS build
 
-# For local Docker and Heroku
+# Set the working directory
+WORKDIR /app
+
+# Copy only the necessary files for dependency resolution
+COPY build.gradle settings.gradle /app/
+COPY src /app/src
+
+# Build the application
+RUN gradle wrapper --gradle-version 8.5
+RUN gradle build --no-daemon
+
+# Stage 2: Create the runtime image
+FROM openjdk:21-jdk-slim
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the built application from the build stage
+COPY --from=build /app/build/libs/app.jar /app/app.jar
+
+# Expose the application port
 EXPOSE 8080
 
-# Heroku uses the CMD to start the application
-# Use a shell form of CMD to allow environment variable substitution
-CMD java -jar app.jar
+# Run the application
+CMD ["java", "-jar", "app.jar"]

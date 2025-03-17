@@ -1,0 +1,31 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    depends_on:
+      - database
+    env_file:
+      - ./backend/.env
+  frontend:
+    build:
+      context: ./frontend/CST438_Project2
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    init: true
+    env_file:
+      - ./frontend/CST438_Project2/.env
+  database:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+volumes:
+  db_data:

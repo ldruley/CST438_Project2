@@ -1,5 +1,5 @@
 import { StyleSheet, Image, Platform, View, Dimensions, Text, TextInput } from 'react-native';
-import { FunctionComponent, Component } from 'react';
+import React, { FunctionComponent, Component } from 'react';
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
 const tierHeight = (1 / 7)+'%';

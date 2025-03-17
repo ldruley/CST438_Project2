@@ -1,0 +1,56 @@
+# General patterns
+.git/
+.gitignore
+.svn/
+.hg/
+.idea/
+.vscode/
+*.swp
+*.swo
+*.log
+*.tmp
+
+# Language-specific patterns
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage
+node_modules/
+npm-debug.log
+yarn-debug.log
+/vendor/
+*.test
+.go-cache/
+target/
+*.class
+.gradle/
+
+# Build and development artifacts
+dist/
+build/
+out/
+test/
+tests/
+*_test.go
+debug/
+
+# Environment and secrets
+.env*
+*.env
+*.pem
+*.key
+*.crt
+config.local.*
+*.local.yml
+
+# Project-specific patterns
+docs/
+*.md
+README*
+Dockerfile*
+docker-compose*
+tmp/
+temp/
+.local/
+local/
