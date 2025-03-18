@@ -1,78 +1,103 @@
-import {Image, StyleSheet, Platform, View, TextInput, TouchableOpacity, Text} from 'react-native';
+import React, { useEffect } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useAuthRequest, makeRedirectUri } from 'expo-auth-session'; 
+import { useNavigation } from '@react-navigation/native'; 
+import { router } from 'expo-router';
+import Constants from 'expo-constants';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import {useState} from "react";
 
-export default function HomeScreen() {
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
-    const [errorMessage, setErrorMessage] = useState("");
+
+// Google OAuth Configuration
+const googleOAuthConfig = {
+  clientId: Constants.manifest.extra.OAUTH_CLIENT_ID || '', 
+  redirectUri: makeRedirectUri(),
+  scopes: ['profile', 'email'],
+};
+
+export default function WelcomeScreen() {
+  // Load Google OAuth2 Discovery Document
+  const discovery = {
+    authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+    tokenEndpoint: 'https://oauth2.googleapis.com/token',
+    revocationEndpoint: 'https://oauth2.googleapis.com/revoke',
+  };
+
+  const navigation = useNavigation();  // Use useNavigation hook to access navigation
+
+  // Use useAuthRequest hook with both the config and discovery document
+  const [request, response, promptAsync] = useAuthRequest(
+    googleOAuthConfig,
+    discovery
+  );
+
+  // Handle OAuth2 response
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const userInfo = response.params;
+      console.log('User Info:', userInfo); // Handle user info or send to backend
+    }
+  }, [response]);
+
   return (
-      <View style={styles.container}>
-          <Text style={styles.title}>Create Account </Text>
+    <LinearGradient colors={['#000000', '#808080']} style={styles.container}>
+      <View style={styles.overlay}>
+        <Text style={styles.title}>Welcome to Our App</Text>
+        <Text style={styles.subtitle}>Login or create an account to continue</Text>
 
-          <TextInput
-              placeholder="Username"
-              style={styles.input}
-              placeholderTextColor="#aaa"
-              value={username}
-              onChangeText={setUsername}
-          />
+        {/* OAuth Login Button */}
+        <TouchableOpacity style={styles.button} onPress={() => promptAsync()}>
+          <Text style={styles.buttonText}>Login with Google</Text>
+        </TouchableOpacity>
 
-          <TextInput
-              placeholder="Password"
-              style={styles.input}
-              placeholderTextColor="#aaa"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-          />
-
-          <TouchableOpacity style={styles.button} >
-              <Text style={styles.buttonText}>Sign Up</Text>
-          </TouchableOpacity>
+        {/* Create Account Button */}
+        <TouchableOpacity 
+          style={[styles.button, styles.createAccountButton]} 
+          onPress={() =>router.replace('/createAccount')} 
+        >
+          <Text style={styles.buttonText}>Create Account</Text>
+        </TouchableOpacity>
       </View>
-
-);
+    </LinearGradient>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "#fffbeb",
-    },
-    title: {
-        fontSize: 36,
-        fontWeight: "900",
-        marginBottom: 20,
-    },
-    input: {
-        width: "80%",
-        padding: 10,
-        marginBottom: 10,
-        borderWidth: 1,
-        borderColor: "black",
-        borderRadius: 20,
-        backgroundColor: "white",
-    },
-    button: {
-        backgroundColor: "#1047d3",
-        padding: 30,
-        borderRadius: 10,
-        marginTop: 10,
-        width: "80%",
-        justifyContent:"center",
-    },
-    buttonText: {
-        color: "white",
-        fontSize: 18,
-        textAlign:"center",
-        justifyContent:"center",
-    },
-
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  overlay: {
+    padding: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 10,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: 'lightgray',
+    marginBottom: 20,
+  },
+  button: {
+    backgroundColor: '#333',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+    marginVertical: 5,
+  },
+  createAccountButton: {
+    backgroundColor: '#555',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });
