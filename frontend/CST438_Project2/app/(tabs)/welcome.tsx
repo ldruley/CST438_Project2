@@ -20,7 +20,93 @@ const mainTier: React.FC = () => {
     D: [],
     F: []
   });
+  // Add this function to handle the batch submission of tiers
+const submitAllTiers = async () => {
+  try {
+    const userId = 1; // Using user ID 1 as requested
+    
+    // Create all tiers for the specified user
+    for (const tierName in tierListProps) {
+      // Skip if this tier has no items
+      if (tierListProps[tierName].length === 0) continue;
 
+      // Check if the tier already exists
+      const searchResponse = await fetch(`${API_BASE_URL}/tiers/search?name=${encodeURIComponent(tierName)}`);
+      const existingTiers = await searchResponse.json();
+      
+      let tierId;
+      
+      if (existingTiers && existingTiers.length > 0) {
+        // Use the existing tier ID
+        tierId = existingTiers[0].id;
+        console.log(`Using existing tier ${tierName} with ID ${tierId}`);
+      } else {
+        // Create a new tier
+        const createTierResponse = await fetch(`${API_BASE_URL}/tiers/user/${userId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: tierName,
+            description: `${tierName} tier items`,
+            color: getTierColor(tierName) // Add a helper function to assign colors
+          })
+        });
+        
+        if (!createTierResponse.ok) {
+          console.error(`Failed to create tier ${tierName}:`, await createTierResponse.text());
+          continue;
+        }
+        
+        const newTier = await createTierResponse.json();
+        tierId = newTier.id;
+        console.log(`Created new tier ${tierName} with ID ${tierId}`);
+      }
+      
+      // Now add all items for this tier using batch endpoint
+      const items = tierListProps[tierName].map(itemName => ({
+        name: itemName,
+        description: `Item in ${tierName} tier`
+      }));
+      
+      if (items.length > 0) {
+        const addItemsResponse = await fetch(`${API_BASE_URL}/items/tier/${tierId}/batch`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(items)
+        });
+        
+        if (addItemsResponse.ok) {
+          console.log(`Added ${items.length} items to tier ${tierName}`);
+        } else {
+          console.error(`Failed to add items to tier ${tierName}:`, await addItemsResponse.text());
+        }
+      }
+    }
+    
+    console.log("All tiers and items have been submitted successfully");
+    // Optional: You can add a success message or notification here
+    
+  } catch (error) {
+    console.error("Error submitting tiers:", error);
+    // Optional: You can add an error message or notification here
+  }
+};
+
+// Helper function to get a color for each tier
+const getTierColor = (tierName) => {
+  // You can customize these colors based on your preference
+  const tierColors = {
+    'Splus': '#FF2D00', // Red for S+
+    'S': '#FF9300',     // Orange for S
+    'A': '#FFE500',     // Yellow for A
+    'B': '#99FF00',     // Light Green for B
+    'C': '#00FFAA',     // Teal for C
+    'D': '#00C3FF',     // Light Blue for D
+    'F': '#6E7278'      // Gray for F
+  };
+  
+  return tierColors[tierName] || '#FFFFFF'; // Default to white if tier name not found
+};
   const handleSubmit = () => {
     console.log("handleSubmit");
     if (tierItem.trim() && selectedTier) {
@@ -115,6 +201,7 @@ const mainTier: React.FC = () => {
       console.error("Error creating tiers:", error);
     }
   };
+  
   const createTestUser = async () => {
     try {
       // Include all required fields
@@ -218,7 +305,14 @@ const mainTier: React.FC = () => {
         onChangeText={(text) => setTierItem(text)}
         value={tierItem}
       />
-      <Button title="Submit" onPress={handleSubmit} />
+      <View style={styles.buttonContainer}>
+        <Button title="Add Item" onPress={handleSubmit} />
+        <Button 
+          title="Save All Tiers" 
+          onPress={submitAllTiers} 
+          color="#28a745" // Green color for save button
+        />
+      </View>
     </View>
   );
 };
@@ -276,5 +370,12 @@ const styles = StyleSheet.create({
   picker:{
     width:'100%',
     height:'100%',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '80%',
+    marginTop: 10,
+    gap: 20, 
   },
 });
