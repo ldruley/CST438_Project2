@@ -41,13 +41,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="tierList"
-        options={{
-          title: 'Tier Lists',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="user"
         options={{
           title: 'User Profile',

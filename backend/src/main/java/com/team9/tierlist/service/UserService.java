@@ -5,11 +5,16 @@ import java.util.Optional;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.team9.tierlist.model.User;
 import com.team9.tierlist.repository.UserRepository;
+
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 public class UserService {
@@ -17,6 +22,20 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
+     private final PasswordEncoder passwordEncoder;
+
+    @Value("${admin.username}")
+    private String adminUsername;
+
+    @Value("${admin.password}")
+    private String adminPassword;
+
+
+    @Autowired
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) { // Inject via constructor
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
     /**
      * Retrieves all users from the database.
      *
@@ -84,8 +103,38 @@ public class UserService {
      * @return The created user with ID assigned
      */
     @Transactional
-    public User createUser(User user) {
-        return userRepository.save(user);
+    public boolean createUser(User user) {
+       try {
+           user.setPassword(passwordEncoder.encode(user.getPassword()));
+           userRepository.save(user);
+           return true;
+       } catch (Exception e) {
+           return false;
+       }
+    }
+        /**
+     * Creates a default admin if one doesn't already exist.
+     */
+    @Transactional
+    public void createDefaultAdmin() {
+        // Check if an admin exists
+        if (userRepository.existsByIsAdminTrue()) {
+            return;  // Admin already exists
+        }
+
+        if (adminPassword == null || adminPassword.isEmpty()) {
+            throw new IllegalArgumentException("Admin password not set in environment variables");
+        }
+
+        // Create the admin user
+        User admin = new User();
+        admin.setUsername(adminUsername);
+        admin.setEmail("admin@example.com");
+        admin.setPassword(passwordEncoder.encode(adminPassword));  // Hash the password
+        admin.setAdmin(true);
+
+        // Save the admin user
+        userRepository.save(admin);
     }
 
     /**
@@ -160,4 +209,28 @@ public class UserService {
         }
         return false;
     }
+
+    
+        /**
+     * Logs out a user.
+     *
+     * @param id The ID of the user to log out
+     * @return true if the user was successfully logged out, false if the user wasn't found
+     */
+    @Transactional
+    public boolean logoutUser(Long id) {
+        
+        return true;
+    }
+
+    public boolean putUser(User user){
+        try {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            userRepository.save(user);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
 }
