@@ -17,7 +17,7 @@ const Login: React.FC = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:8080/api/login', {
+      const response = await fetch('http://localhost:8081/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -30,6 +30,12 @@ const Login: React.FC = () => {
         setError(data.message || 'Invalid username or password');
         return;
       }
+    const data = await response.json();
+    const jwtToken = data.jwtToken;  // Extract the JWT token from the response
+
+    // Store the JWT token in AsyncStorage
+    await AsyncStorage.setItem('jwtToken', jwtToken);
+
 
       setUsername('');
       setPassword('');

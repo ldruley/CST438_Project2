@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,7 +22,7 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(); 
+     private final PasswordEncoder passwordEncoder;
 
     @Value("${admin.username}")
     private String adminUsername;
@@ -29,6 +30,12 @@ public class UserService {
     @Value("${admin.password}")
     private String adminPassword;
 
+
+    @Autowired
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) { // Inject via constructor
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
     /**
      * Retrieves all users from the database.
      *
@@ -96,25 +103,14 @@ public class UserService {
      * @return The created user with ID assigned
      */
     @Transactional
-    public User createUser(User user) {
-        //check if user exists
-    if (userRepository.existsByUsername(user.getUsername())) {
-        throw new IllegalArgumentException("Username already exists");
-    }
-
-    // Check if the email already exists
-    if (userRepository.existsByEmail(user.getEmail())) {
-        throw new IllegalArgumentException("Email already exists");
-    }
-
-        // Hash the password before saving
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-
-        // Ensure new users are not admins
-        user.setAdmin(false);
-
-    // If both checks pass, save the user
-    return userRepository.save(user);
+    public boolean createUser(User user) {
+       try {
+           user.setPassword(passwordEncoder.encode(user.getPassword()));
+           userRepository.save(user);
+           return true;
+       } catch (Exception e) {
+           return false;
+       }
     }
         /**
      * Creates a default admin if one doesn't already exist.
@@ -225,6 +221,16 @@ public class UserService {
     public boolean logoutUser(Long id) {
         
         return true;
+    }
+
+    public boolean putUser(User user){
+        try {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            userRepository.save(user);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
 }

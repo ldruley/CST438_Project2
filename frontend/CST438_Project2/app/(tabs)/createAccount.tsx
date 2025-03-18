@@ -20,48 +20,49 @@ const CreateAccount: React.FC = () => {
 
   // Handle account creation form submission
   const handleCreateAccount = async (): Promise<void> => {
-    if (!username || !email || !password) {
-      setError('Please fill out all fields.');
-      return;
-    }
-
-    try {
-      // Make API call to create the user
-      const response = await fetch('http://localhost:8080/api/users/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, email, password, isAdmin: false }), // Adjust if needed
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        setError(data.message || 'Failed to create account');
+      if (!username || !email || !password) {
+        setError('Please fill out all fields.');
         return;
       }
 
-      // Account successfully created, reset form and show success
-      setUsername('');
-      setEmail('');
-      setPassword('');
-      setError('');
+      try {
+        // Create the user
+        const createResponse = await fetch('http://localhost:8081/api/users/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, password, isAdmin: false }),
+        });
 
-      // Automatically log the user in by making a login request
-      const loginResponse = await fetch('http://localhost:8080/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }), // Use the created credentials to log in
-      });
-      
-      // Redirect to login page
-      router.push('/login'); 
+        if (!createResponse.ok) {
+          const data = await createResponse.json();
+          setError(data.message || 'Failed to create account');
+          return;
+        }
 
-    } catch (err) {
-      setError('An error occurred. Please try again later.');
-    }
+        // Automatically log in the user
+        const loginResponse = await fetch('http://localhost:8080/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+
+        if (!loginResponse.ok) {
+          setError('Account created, but login failed. Please log in manually.');
+          return;
+        }
+
+        // Extract JWT token from the response
+        const loginData = await loginResponse.json();
+        const jwtToken = loginData.jwtToken;
+
+        // Store JWT token in AsyncStorage
+        await AsyncStorage.setItem('jwtToken', jwtToken);
+
+        // Redirect to home page
+        router.push('/home');
+      } catch (err) {
+        setError('An error occurred. Please try again later.');
+      }
   };
 
   return (
