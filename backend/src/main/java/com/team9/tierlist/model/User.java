@@ -41,7 +41,7 @@ public class User {
     private String email;
 
     @NotNull(message = "Role is required")
-    Boolean isAdmin;
+    boolean isAdmin;
 
     @OneToMany(mappedBy = "user")
     @JsonIgnoreProperties("user")

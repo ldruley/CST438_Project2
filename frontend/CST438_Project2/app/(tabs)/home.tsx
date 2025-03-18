@@ -1,80 +1,76 @@
-import {StyleSheet, Image, Platform, View, Text, TextInput, TouchableOpacity} from 'react-native';
+import React, { useEffect } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useAuthRequest, makeRedirectUri } from 'expo-auth-session'; 
+import { useNavigation } from '@react-navigation/native'; 
+import { router } from 'expo-router';
+import Constants from 'expo-constants';
 
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import {useState} from "react";
+export default function LandingScreen() {
 
-export default function TabTwoScreen() {
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
-    const [errorMessage, setErrorMessage] = useState("");
+
+
+  const navigation = useNavigation();  // Use useNavigation hook to access navigation
+
   return (
-      <View style={styles.container}>
-          <Text style={styles.title}>Log In</Text>
+    <LinearGradient colors={['#000000', '#808080']} style={styles.container}>
+      <View style={styles.overlay}>
+        <Text style={styles.title}>Welcome to Our App</Text>
+        <Text style={styles.subtitle}>Login or create an account to continue</Text>
 
-          <TextInput
-              style={styles.input}
-              placeholder="Username"
-              placeholderTextColor="#aaa"
-              value={username}
-              onChangeText={setUsername}
-          />
+        {/* OAuth Login Button */}
+        <TouchableOpacity style={styles.button} onPress={() => router.replace('/login')}>
+          <Text style={styles.buttonText}>Log in!</Text>
+        </TouchableOpacity>
 
-          <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor="#aaa"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-          />
-
-          <TouchableOpacity style={styles.button} >
-              <Text style={styles.buttonText}>Log In</Text>
-          </TouchableOpacity>
+        {/* Create Account Button */}
+        <TouchableOpacity 
+          style={[styles.button, styles.createAccountButton]} 
+          onPress={() =>router.replace('/createAccount')} 
+        >
+          <Text style={styles.buttonText}>Create Account</Text>
+        </TouchableOpacity>
       </View>
-
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "#fffbeb",
-    },
-    title: {
-        fontSize: 36,
-        fontWeight: "900",
-        marginBottom: 20,
-    },
-    input: {
-        width: "80%",
-        padding: 10,
-        marginBottom: 10,
-        borderWidth: 1,
-        borderColor: "black",
-        borderRadius: 20,
-        backgroundColor: "white",
-    },
-    button: {
-        backgroundColor: "#1047d3",
-        padding: 30,
-        borderRadius: 10,
-        marginTop: 10,
-        width: "80%",
-        justifyContent:"center",
-    },
-    buttonText: {
-        color: "white",
-        fontSize: 18,
-        textAlign:"center",
-        justifyContent:"center",
-    },
-
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  overlay: {
+    padding: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 10,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: 'lightgray',
+    marginBottom: 20,
+  },
+  button: {
+    backgroundColor: '#333',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+    marginVertical: 5,
+  },
+  createAccountButton: {
+    backgroundColor: '#555',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });
