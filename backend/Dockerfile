@@ -1,10 +1,10 @@
-FROM gradle:jdk17 as build
+FROM gradle:jdk21 AS build
 WORKDIR /app
 COPY . .
 RUN chmod +x ./gradlew
 RUN ./gradlew bootJar --no-daemon
 
-FROM openjdk:17-slim
+FROM openjdk:21-slim
 WORKDIR /app
 COPY --from=build /app/build/libs/app.jar .
 
