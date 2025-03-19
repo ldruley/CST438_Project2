@@ -55,11 +55,12 @@ public class Tier {
     }
 
     // Full constructor
-    public Tier(String name, String color, String description, User user) {
+    public Tier(String name, String color, String description, User user, Boolean isPublic) {
         this.name = name;
         this.color = color;
         this.description = description;
         this.user = user;
+        this.isPublic = isPublic != null ? isPublic : false;
     }
 
     // Getters and Setters
