@@ -36,7 +36,7 @@ public class SecurityConfig {
         httpSecurity
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/login", "/auth/register", "/auth/logout").permitAll()
+                        .requestMatchers("/auth/login", "/auth/register", "/auth/logout","/auth/auth/debug-auth").permitAll()
                         .requestMatchers("/user/deleteUser/**", "/user/all", "/user/put").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/user/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
                         .anyRequest().authenticated()
