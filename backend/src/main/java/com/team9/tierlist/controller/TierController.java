@@ -153,4 +153,36 @@ public class TierController {
         return activeTier.map(tier -> new ResponseEntity<>(tier, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
+
+    @GetMapping("/public")
+    public ResponseEntity<List<Tier>> getAllPublicTiers() {
+        List<Tier> publicTiers = tierService.getAllPublicTiers();
+        return new ResponseEntity<>(publicTiers, HttpStatus.OK);
+    }
+
+    @GetMapping("/public/user/{userId}")
+    public ResponseEntity<List<Tier>> getPublicTiersByUser(@PathVariable Long userId) {
+        List<Tier> publicTiers = tierService.getPublicTiersByUserId(userId);
+        return new ResponseEntity<>(publicTiers, HttpStatus.OK);
+    }
+
+    @GetMapping("/public/search")
+    public ResponseEntity<List<Tier>> searchPublicTiers(@RequestParam String name) {
+        List<Tier> tiers = tierService.searchPublicTiersByName(name);
+        return new ResponseEntity<>(tiers, HttpStatus.OK);
+    }
+
+    @PutMapping("/{id}/visibility")
+    public ResponseEntity<Tier> setTierlistVisibility(
+            @PathVariable Long id,
+            @RequestParam Boolean isPublic) {
+
+        Tier updatedTier = tierService.toggleTierlistVisibility(id, isPublic);
+
+        if (updatedTier != null) {
+            return new ResponseEntity<>(updatedTier, HttpStatus.OK);
+        }
+
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
 }

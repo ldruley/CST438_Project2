@@ -32,6 +32,9 @@ public class Tier {
 
     private String description;
 
+    @Column(name = "is_public", nullable = false)
+    private Boolean isPublic = false; // Default to private
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     @JsonIgnoreProperties({"password", "tiers"})
@@ -116,6 +119,14 @@ public class Tier {
     public void removeItem(Item item) {
         items.remove(item);
         item.setTier(null);
+    }
+
+    public Boolean getIsPublic() {
+        return isPublic;
+    }
+
+    public void setIsPublic(Boolean isPublic) {
+        this.isPublic = isPublic;
     }
 
     @Override
