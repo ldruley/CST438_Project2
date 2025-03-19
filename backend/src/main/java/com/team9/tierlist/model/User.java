@@ -3,6 +3,7 @@ package com.team9.tierlist.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
@@ -26,14 +27,17 @@ public class User {
 
     @NotBlank(message = "Username is required")
     @Size(max = 50, message = "Username cannot exceed 50 characters")
+    @Column(unique = true)
     private String username;
 
     @NotBlank(message = "Password is required")
     @Size(min = 6, message = "Password must be at least 6 characters long")
+    
     private String password;
 
     @Email(message = "Email should be valid")
     @Size(max = 100, message = "Email cannot exceed 100 characters")
+    @Column(unique = true)
     private String email;
 
     @NotNull(message = "Role is required")

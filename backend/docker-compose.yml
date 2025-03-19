@@ -7,6 +7,8 @@ services:
       - "8080:8080"
     depends_on:
       - mysqldb
+    env_file:
+      - .env
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysqldb:3306/tierlist_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       - SPRING_DATASOURCE_USERNAME=root
