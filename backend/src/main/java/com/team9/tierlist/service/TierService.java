@@ -185,6 +185,15 @@ public class TierService {
     @Transactional
     public boolean deleteTier(Long id) {
         if (tierRepository.existsById(id)) {
+            // Find all users who have this as their active tierlist
+            List<User> users = userRepository.findByActiveTierlistId(id);
+
+            // Update those users to not have an active tierlist
+            for (User user : users) {
+                user.setActiveTierlistId(null);
+                userRepository.save(user);
+            }
+
             tierRepository.deleteById(id);
             return true;
         }
@@ -200,5 +209,13 @@ public class TierService {
      */
     public boolean existsByNameAndUserId(String name, Long userId) {
         return tierRepository.existsByNameIgnoreCaseAndUserId(name, userId);
+    }
+
+    public Optional<Tier> getActiveTierlistForUser(Long userId) {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user != null && user.getActiveTierlistId() != null) {
+            return tierRepository.findById(user.getActiveTierlistId());
+        }
+        return Optional.empty();
     }
 }

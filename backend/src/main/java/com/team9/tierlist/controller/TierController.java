@@ -146,4 +146,11 @@ public class TierController {
 
         return new ResponseEntity<>(itemService.getItemsByTierId(id), HttpStatus.OK);
     }
+
+    @GetMapping("/user/{userId}/active")
+    public ResponseEntity<Tier> getUserActiveTierlist(@PathVariable Long userId) {
+        Optional<Tier> activeTier = tierService.getActiveTierlistForUser(userId);
+        return activeTier.map(tier -> new ResponseEntity<>(tier, HttpStatus.OK))
+                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    }
 }
