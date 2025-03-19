@@ -1,31 +1,29 @@
 package com.team9.tierlist.controller;
 
-import com.team9.tierlist.model.JwtAuthenticationResponse;
-import com.team9.tierlist.model.LoginRequest;
-import com.team9.tierlist.model.User;
-import com.team9.tierlist.service.UserInfoService;
-import com.team9.tierlist.service.UserService;
-import com.team9.tierlist.utils.JwtTokenUtil;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.team9.tierlist.model.User;
+import com.team9.tierlist.service.UserService;
+import com.team9.tierlist.utils.JwtTokenUtil;
 
-import java.util.HashMap;
-import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 
 @RestController
@@ -80,6 +78,13 @@ private final JwtTokenUtil jwtTokenUtil;
         boolean success = userService.createUser(user);
 
         if(success) {
+             User createdUser = userService.getUserByUsername(username);
+              Map<String, Object> response = new HashMap<>();
+            response.put("id", createdUser.getId());
+            response.put("username", createdUser.getUsername());
+            response.put("email", createdUser.getEmail());
+            response.put("isAdmin", createdUser.isAdmin());
+            response.put("message", "User has been created successfully!");
             return ResponseEntity.ok("User has been created!");
         }else {
             return ResponseEntity.internalServerError().body("Unable to create user.");
@@ -96,6 +101,53 @@ private final JwtTokenUtil jwtTokenUtil;
         return ResponseEntity.ok("Successfully logged out!");
 
     }
+
+    @PostMapping("/debug-auth")
+public ResponseEntity<?> debugAuth(@RequestParam String username, @RequestParam String password) {
+    try {
+        // Get the user from the database
+        User user = userService.getUserByUsername(username);
+        if (user == null) {
+            return ResponseEntity.status(404).body("User not found in database");
+        }
+        
+        // Check if password matches using passwordEncoder
+        boolean passwordMatches = passwordEncoder.matches(password, user.getPassword());
+        
+        // Try to load the user with UserDetailsService
+        UserDetails userDetails = null;
+        String userDetailsError = null;
+        try {
+             Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(username, password)
+                );
+                userDetails = (UserDetails) authentication.getPrincipal();
+                
+        } catch (Exception e) {
+            userDetailsError = e.getMessage();
+        }
+        
+        // Create response with all debugging info
+        Map<String, Object> response = new HashMap<>();
+        response.put("username", username);
+        response.put("userExistsInDb", (user != null));
+        response.put("passwordMatches", passwordMatches);
+        response.put("storedPasswordPrefix", user.getPassword().substring(0, 10) + "...");
+        response.put("isAdmin", user.isAdmin());
+        response.put("userDetailsLoaded", (userDetails != null));
+        
+        if (userDetails != null) {
+            response.put("userDetailsUsername", userDetails.getUsername());
+            response.put("userDetailsAuthorities", userDetails.getAuthorities().toString());
+        } else {
+            response.put("userDetailsError", userDetailsError);
+        }
+        
+        return ResponseEntity.ok(response);
+    } catch (Exception e) {
+        return ResponseEntity.status(500).body("Error during debug: " + e.getMessage());
+    }
+}
 
     @GetMapping("/debug/auth")
     public ResponseEntity<String> debugAuthentication(HttpServletRequest request) {
@@ -116,4 +168,6 @@ private final JwtTokenUtil jwtTokenUtil;
 
         return ResponseEntity.ok(debug.toString());
     }
+
+    
 }

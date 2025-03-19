@@ -13,8 +13,11 @@ services:
       - SPRING_DATASOURCE_PASSWORD=password
       - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
       - SERVER_PORT=8080
+      - JWT_SECRET_KEY=
     networks:
       - tierlist-network
+    env_file:
+      - .env
 
   mysqldb:
     image: mysql:8.0
