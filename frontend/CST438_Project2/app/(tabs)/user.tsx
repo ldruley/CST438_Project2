@@ -1,8 +1,11 @@
-import {StyleSheet, Image, Platform, View, Text, TextInput, TouchableOpacity, Button, ScrollView} from 'react-native';
-
+import {StyleSheet, Image, Platform, View, Text,
+    TextInput, TouchableOpacity, Button, ScrollView, Modal} from 'react-native';
 import {useState,useEffect} from "react";
-import axios from "axios";
+// import axios from "axios";
 import {sync} from "glob";
+import {CustomPropertyName} from "lightningcss";
+import {number} from "prop-types";
+import {router} from "expo-router";
 
 interface CustomInputProps {
     placeholder: string;
@@ -24,44 +27,42 @@ const CustomInput: React.FC<CustomInputProps> = ({ placeholder, value, onChangeT
     );
 };
 
+
+
+
 export default function TabTwoScreen() {
-    const[userName,setUsername]= useState(''); //rn its being used by all text input, will probably affect search? make another to prevent that
+    //for user to change name
+    const[userName,setUsername]= useState('');
     const [password,setPassword] = useState('');
     const [password2,setPassword2]= useState('');
     const [email,setEmail]= useState('');
+    //delete user var
+    const[deleteUser,setDeleteUser]= useState('')
+    const[delUserId,setDelUserId]=useState('')
+    //edit user var
+    const[editUserId,setEditUserId] = useState('');
+    const[editName,setEditName]=useState('');
+    const[editPass,setEditPass]=useState('');
+    const[editMail,setEditMail]=useState('');
+    //for delete warning
+    const [userModalVisible, setUserModalVisible] = useState(false);
+    const [adminModalVisible, setAdminModalVisible] = useState(false);
+    const [warnPass,setWarnPass] = useState('');
+    const tempPass= "123456789";
+
     const [userObject,setUserObject]= useState([]); //for print all users
 
 
     const [data, setData] = useState(null);
 
-    const fetchUsers = async () => {
-        try {
-            const response = await fetch("http://localhost:8080/api/users", {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                mode: "cors",  // Ensure that CORS is enabled
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log("Fetched Users:", data); // Print to console
-            setData(data); // Store in state
-        } catch (error) {
-            console.error("Error fetching users:", error);
-        }
-    };
 
 
+    //current user methods, all these should refer to logged in user
     const handleConfirmName = async () =>{
         //call back end: updateUser
         //check username slot filled, check if it exists, then change userName
         if(!userName){
-            console.log("empty!");
+            console.log("input new userName!");
         }
         else{
             //check username vs db
@@ -95,9 +96,35 @@ export default function TabTwoScreen() {
     const handleDelete = async ()=>{
         //call back end: deleteUser
         console.log("GoodBye! :(");
-        //     asks for confirmation: if yes, kicks user back to main menu
+
+        // router.push("/home");
+        // router.replace("http://localhost:8081/home")
+        //     asks for confirmation: if yes,deletes user then kicks user back to main menu
     }
     //admin methods
+
+    //admin methods - admin can choose who to create. can admin delete self?
+    const fetchUsers = async () => {
+        try {
+            const response = await fetch("http://localhost:8080/api/users", {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                mode: "cors",  // Ensure that CORS is enabled
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Fetched Users:", data); // Print to console
+            setData(data); // Store in state
+        } catch (error) {
+            console.error("Error fetching users:", error);
+        }
+    };
 
     const handleAdminViewAll = async ()=>{
         //call backend: getAllUsers
@@ -139,13 +166,83 @@ export default function TabTwoScreen() {
         }
     };
     const handleAdminDelete = async() =>{
+
         //call backend: deleteUser
+        //TODO- update this to most recent delete in UserController " @DeleteMapping("/deleteUser/{id}")"
         console.log("gonna find someone to delete!");
+
+
+
+        if (!delUserId){
+            console.error("Input a user to delete!");
+            return;
+        }
+
+        setAdminModalVisible(true);
+
+        try{
+            const response = await fetch(`http://localhost:8080/api/users/${delUserId}`,{
+                method:"DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                mode: "cors",
+            });
+            if (response.ok){
+                console.log("User deleted");
+            }
+            else{
+                console.log("failed to delete user")
+            }
+        }
+        catch (e){
+            console.error("Error deleting said user: ",e)
+        }
+
+
     }
     const handleAdminEdit = async() =>{
-        //call backend: updateUser
+        //call backend: updateUser (PATCH) ver
         console.log("gonna find someone to edit!");
+        //
+
+
+        if(!editUserId){
+            console.error("Input a user id to edit!");
+            return;
+        }
+
+        const edited_user={
+            username:editName,
+            password:editPass,
+            email:editMail,
+            isAdmin:false,
+        };
+        try{
+            const response = await fetch(`http://localhost:8080/api/users/${editUserId}`,{
+                method:"PATCH",
+                headers:{
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(edited_user),
+                mode: "cors",
+            });
+            if (response.ok){
+                console.log("User edited");
+            }
+            else{
+                console.log("failed to edit user")
+            }
+
+
+        }catch (e){
+            console.error("Error editing user: ", e);
+        }
+
+
     }
+
+
 
     const isAdmin =true;
     return (
@@ -157,7 +254,7 @@ export default function TabTwoScreen() {
             {/*<Text style={ styles.title}>Edit Profile ⛭</Text>*/}
             {isAdmin && ( <Text style={ styles.title}>👑 Edit Profile as Admin ⛭</Text>)}
             {!isAdmin && ( <Text style={ styles.title}>Edit Profile ⛭</Text>)}
-
+            {/*//TODO edit title to use logged in user Username */}
             <Text style={ styles.h5}> Current UserName: xxx</Text>
 
             <CustomInput placeholder={"Username"} value={userName} onChangeText={setUsername}/>
@@ -174,8 +271,35 @@ export default function TabTwoScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.buttonDelete} >
-                <Text style={styles.buttonText} onPress={handleDelete}>Delete Account!</Text>
+                <Text style={styles.buttonText} onPress={()=>setUserModalVisible(true)}>Delete Account!</Text>
             </TouchableOpacity>
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={userModalVisible}
+                onRequestClose={() => setUserModalVisible(false)}
+            >
+                <View style={styles.modalBackground}>
+                    <View style={styles.modalContainer}>
+                        <Text style={styles.modalText}>Are you sure you want to delete account?{"\n\n"}Type in password to confirm...</Text>
+                        <TextInput
+                            //the user should input their password for confirmation
+                            style={styles.input}
+                            placeholder="Current Password"
+                            value={warnPass}
+                            onChangeText={(text) => setWarnPass(text)}
+                        />
+                        <Button
+                            title="Cancel"
+                            onPress={() => setUserModalVisible(false)}
+                        />
+                        <Button
+                            title={"Confirm"}
+                            onPress={handleDelete}
+                        />
+                    </View>
+                </View>
+            </Modal>
 
             {isAdmin &&(
                 <View  style={styles.subContainer} >
@@ -200,18 +324,85 @@ export default function TabTwoScreen() {
                         <Text style={styles.buttonText} onPress={handleAdminCreate}>Create User</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.adminButton} onPress={handleAdminDelete}>
+                    <TouchableOpacity
+                        style={styles.adminButton}
+                        onPress={() => {
+                            console.log('delUserId:', delUserId);
+                            // TODO fix this condition...
+                            if (delUserId !=="") {
+                                setAdminModalVisible(true);
+                            } else {
+                                console.log("Insert User ID to delete");
+                            }
+                        }}
+                    >
                         {/*opens a menu:decide user, delete user*/}
                         <Text style={styles.buttonText}>Delete Users</Text>
                     </TouchableOpacity>
-                    <CustomInput placeholder={"Search Username to DELETE"} value={userName} onChangeText={setUsername}/>
+                    <TextInput
+                        style={styles.input}
+                        placeholder={"Enter User ID to delete user"}
+                        placeholderTextColor="#aaa"
+                        keyboardType={"numeric"}
+                        onChangeText={(text)=> setDelUserId(text)}
+                        value={delUserId}
+
+                    />
+                    <Modal
+                        animationType="slide"
+                        transparent={true}
+                        visible={adminModalVisible}
+                        onRequestClose={() => setAdminModalVisible(false)}
+                    >
+                        <View style={styles.modalBackground}>
+                            <View style={styles.modalContainer}>
+                                <Text style={styles.modalText}>
+                                    Are you sure you want to delete the account?{"\n\n"}Type in their password to confirm...
+                                </Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Current Password"
+                                    value={warnPass}
+                                    onChangeText={(text) => setWarnPass(text)}
+                                />
+                                <Button
+                                    title="Cancel"
+                                    onPress={() => setAdminModalVisible(false)}
+                                />
+                                <Button
+                                    title={"Confirm"}
+                                    onPress={async () => {
+                                        //does Admin input the user's password?
+                                        if (warnPass === tempPass) {
+                                            await handleAdminDelete();
+                                            setAdminModalVisible(false);
+                                        } else {
+                                            console.log("Incorrect password");
+                                        }
+                                    }}
+                                />
+                            </View>
+                        </View>
+                    </Modal>
 
 
-                    <TouchableOpacity style={styles.adminButton}>
+
+                    <TouchableOpacity style={styles.adminButton} onPress={handleAdminEdit}>
                         {/*opens a menu: decide user, do same thing as edit profile */}
-                        <Text style={styles.buttonText}>Update Users</Text>
+                        <Text style={styles.buttonText}>Update User</Text>
                     </TouchableOpacity>
-                    <CustomInput placeholder={"Search Username to UPDATE"} value={userName} onChangeText={setUsername}/>
+                    <TextInput
+                        style={styles.input}
+                        placeholder={"Enter User ID to edit user"}
+                        placeholderTextColor="#aaa"
+                        keyboardType={"numeric"}
+                        onChangeText={(text)=> setEditUserId(text)}
+                        value={editUserId}
+
+                    />
+                    <CustomInput placeholder={"Username"} value={editName} onChangeText={setEditName}/>
+                    <CustomInput placeholder={"Password"} value={editPass} onChangeText={setEditPass}/>
+                    <CustomInput placeholder={"Set Email"} value={editMail} onChangeText={setEditMail}/>
                 </View>
             )}
         </ScrollView>
@@ -287,5 +478,22 @@ const styles = StyleSheet.create({
     h6:{
         fontSize: 16,
         fontWeight: 'normal',
-    }
+    },
+    modalBackground: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContainer: {
+        width: 300,
+        padding: 20,
+        backgroundColor: 'white',
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    modalText: {
+        fontSize: 18,
+        marginBottom: 20,
+    },
 });
