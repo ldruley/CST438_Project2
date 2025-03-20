@@ -32,7 +32,7 @@ public class SecurityConfig {
     }
 
     //disabled for testing
-  /*  @Bean
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws  Exception {
         httpSecurity
                 .csrf(csrf -> csrf.disable())
@@ -48,10 +48,10 @@ public class SecurityConfig {
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return httpSecurity.build();
-    }*/
+    }
 
     //testing purposes
-    @Bean
+   /* @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
                 .csrf(csrf -> csrf.disable())
@@ -63,7 +63,7 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 );
         return httpSecurity.build();
-    }
+    }*/
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
