@@ -3,56 +3,7 @@ import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Alert,
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import ColorPicker from 'react-native-wheel-color-picker';
-import { Tier } from '@/types/tierlist';
-
-// TierInput Component
-interface TierInputProps {
-    tier: Tier;
-    index: number;
-    updateTier: (index: number, tier: Tier) => void;
-    removeTier: (index: number) => void;
-}
-
-const TierInput: React.FC<TierInputProps> = ({ tier, index, updateTier, removeTier }) => {
-    return (
-        <View style={styles.tierInputContainer}>
-            <View style={styles.tierHeader}>
-                <Text style={styles.tierLabel}>Tier {index + 1}</Text>
-                <TouchableOpacity
-                    style={styles.removeTierButton}
-                    onPress={() => removeTier(index)}
-                >
-                    <Text style={styles.removeTierButtonText}>X</Text>
-                </TouchableOpacity>
-            </View>
-
-            <View style={styles.tierInputs}>
-                <TextInput
-                    style={styles.tierNameInput}
-                    placeholder="Tier name (e.g., S, A, B)"
-                    value={tier.name}
-                    onChangeText={(text) => updateTier(index, { ...tier, name: text })}
-                    placeholderTextColor="#999"
-                />
-
-                <View style={[styles.colorPreview, { backgroundColor: tier.color }]} />
-            </View>
-
-            <Text style={styles.colorLabel}>Tier Color:</Text>
-            <View style={styles.colorPickerContainer}>
-                <ColorPicker
-                    color={tier.color}
-                    onColorChange={(color) => updateTier(index, { ...tier, color })}
-                    thumbSize={30}
-                    sliderSize={20}
-                    noSnap={true}
-                    row={false}
-                />
-            </View>
-        </View>
-    );
-};
+import { Tier, TIER_COLORS } from '@/types/tierlist';
 
 export default function CreateTierlistScreen() {
     return (
@@ -72,13 +23,15 @@ const CreateTierlistContent: React.FC = () => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [isPublic, setIsPublic] = useState(false);
-    const [tiers, setTiers] = useState<Tier[]>([
-        { id: 1, name: 'S', color: '#FF5252' },
-        { id: 2, name: 'A', color: '#FF9800' },
-        { id: 3, name: 'B', color: '#FFEB3B' },
-        { id: 4, name: 'C', color: '#8BC34A' },
-        { id: 5, name: 'D', color: '#03A9F4' },
-        { id: 6, name: 'F', color: '#9C27B0' }
+    // Predefined tiers with standard mapping
+    const [tiers] = useState<Tier[]>([
+        { id: 1, name: 'S', color: TIER_COLORS['S'] },
+        { id: 2, name: 'A', color: TIER_COLORS['A'] },
+        { id: 3, name: 'B', color: TIER_COLORS['B'] },
+        { id: 4, name: 'C', color: TIER_COLORS['C'] },
+        { id: 5, name: 'D', color: TIER_COLORS['D'] },
+        { id: 6, name: 'E', color: TIER_COLORS['E'] },
+        { id: 7, name: 'F', color: TIER_COLORS['F'] }
     ]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [userId, setUserId] = useState<number | null>(null);
@@ -96,7 +49,9 @@ const CreateTierlistContent: React.FC = () => {
                     setJwtToken(token);
                 } else {
                     // If no user ID or token, redirect to login
-                    router.replace('/login');
+                    router.replace({
+                        pathname: '/login'
+                    });
                 }
             } catch (error) {
                 console.error('Failed to get user info:', error);
@@ -106,36 +61,9 @@ const CreateTierlistContent: React.FC = () => {
         getUserInfo();
     }, []);
 
-    const updateTier = (index: number, updatedTier: Tier) => {
-        const updatedTiers = [...tiers];
-        updatedTiers[index] = updatedTier;
-        setTiers(updatedTiers);
-    };
-
-    const addTier = () => {
-        const nextId = Math.max(...tiers.map(t => t.id)) + 1;
-        setTiers([...tiers, { id: nextId, name: `Tier ${tiers.length + 1}`, color: '#808080' }]);
-    };
-
-    const removeTier = (index: number) => {
-        if (tiers.length <= 1) {
-            Alert.alert('Error', 'You need at least one tier');
-            return;
-        }
-
-        const updatedTiers = [...tiers];
-        updatedTiers.splice(index, 1);
-        setTiers(updatedTiers);
-    };
-
     const handleSubmit = async () => {
         if (!name.trim()) {
             Alert.alert('Error', 'Please enter a tierlist name');
-            return;
-        }
-
-        if (tiers.length === 0) {
-            Alert.alert('Error', 'You need at least one tier');
             return;
         }
 
@@ -157,8 +85,7 @@ const CreateTierlistContent: React.FC = () => {
                 body: JSON.stringify({
                     name,
                     description,
-                    isPublic,
-                    color: tiers[0].color, // Use first tier's color as the tierlist color
+                    isPublic
                 }),
             });
 
@@ -168,28 +95,13 @@ const CreateTierlistContent: React.FC = () => {
 
             const tierlist = await tierlistResponse.json();
 
-            // Now create each tier
-            for (const tier of tiers) {
-                await fetch(`http://localhost:8080/api/tiers/${tierlist.id}/tiers`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${jwtToken}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        name: tier.name,
-                        color: tier.color,
-                    }),
-                });
-            }
-
             Alert.alert(
                 'Success',
                 'Tierlist created successfully',
                 [
                     {
                         text: 'OK',
-                        onPress: () =>           router.replace({
+                        onPress: () => router.replace({
                             pathname: '/tierlist/[id]',
                             params: { id: tierlist.id.toString() }
                         }),
@@ -250,22 +162,19 @@ const CreateTierlistContent: React.FC = () => {
                 </View>
 
                 <View style={styles.formSection}>
-                    <View style={styles.tiersHeader}>
-                        <Text style={styles.sectionTitle}>Tiers</Text>
-                        <TouchableOpacity style={styles.addTierButton} onPress={addTier}>
-                            <Text style={styles.addTierButtonText}>+ Add Tier</Text>
-                        </TouchableOpacity>
-                    </View>
+                    <Text style={styles.sectionTitle}>Tiers Information</Text>
+                    <Text style={styles.tierInfo}>
+                        Your tierlist will include the standard tiers: S, A, B, C, D, E, and F.
+                        After creating the tierlist, you'll be able to add items to each tier.
+                    </Text>
 
-                    {tiers.map((tier, index) => (
-                        <TierInput
-                            key={tier.id}
-                            tier={tier}
-                            index={index}
-                            updateTier={updateTier}
-                            removeTier={removeTier}
-                        />
-                    ))}
+                    <View style={styles.tiersPreview}>
+                        {tiers.map((tier) => (
+                            <View key={tier.id} style={[styles.tierPreviewItem, { backgroundColor: tier.color }]}>
+                                <Text style={styles.tierPreviewText}>{tier.name}</Text>
+                            </View>
+                        ))}
+                    </View>
                 </View>
 
                 <TouchableOpacity
@@ -345,79 +254,30 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 16,
     },
-    tiersHeader: {
+    tierInfo: {
+        color: 'white',
+        fontSize: 14,
+        marginBottom: 16,
+        lineHeight: 20,
+    },
+    tiersPreview: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
         marginBottom: 16,
     },
-    addTierButton: {
-        backgroundColor: '#4da6ff',
-        padding: 8,
-        borderRadius: 8,
-    },
-    addTierButtonText: {
-        color: 'white',
-        fontWeight: 'bold',
-    },
-    tierInputContainer: {
-        backgroundColor: 'rgba(0, 0, 0, 0.1)',
-        borderRadius: 8,
-        padding: 16,
-        marginBottom: 16,
-    },
-    tierHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    tierLabel: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: 'white',
-    },
-    removeTierButton: {
-        backgroundColor: '#ff6b6b',
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    removeTierButtonText: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 16,
-    },
-    tierInputs: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    tierNameInput: {
-        flex: 1,
-        backgroundColor: 'white',
-        borderRadius: 8,
-        padding: 12,
-        marginRight: 16,
-        fontSize: 16,
-    },
-    colorPreview: {
+    tierPreviewItem: {
         width: 40,
         height: 40,
         borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
         borderWidth: 2,
         borderColor: 'white',
     },
-    colorLabel: {
-        fontSize: 16,
+    tierPreviewText: {
         color: 'white',
-        marginBottom: 8,
-    },
-    colorPickerContainer: {
-        height: 220,
-        marginBottom: 16,
+        fontWeight: 'bold',
+        fontSize: 18,
     },
     submitButton: {
         backgroundColor: '#4da6ff',

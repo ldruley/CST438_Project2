@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import TierList from '@/components/TierList';
-import { Item, Tier, Tierlist } from '@/types/tierlist';
+import { Item, Tier, Tierlist, TIER_RANKS, TIER_COLORS } from '@/types/tierlist';
 
 const TierlistView: React.FC = () => {
     const params = useLocalSearchParams();
@@ -12,7 +12,15 @@ const TierlistView: React.FC = () => {
     const router = useRouter();
 
     const [tierlist, setTierlist] = useState<Tierlist | null>(null);
-    const [tiers, setTiers] = useState<Tier[]>([]);
+    const [tiers, setTiers] = useState<Tier[]>([
+        { id: 1, name: "S", color: TIER_COLORS["S"] },
+        { id: 2, name: "A", color: TIER_COLORS["A"] },
+        { id: 3, name: "B", color: TIER_COLORS["B"] },
+        { id: 4, name: "C", color: TIER_COLORS["C"] },
+        { id: 5, name: "D", color: TIER_COLORS["D"] },
+        { id: 6, name: "E", color: TIER_COLORS["E"] },
+        { id: 7, name: "F", color: TIER_COLORS["F"] },
+    ]);
     const [items, setItems] = useState<Record<number, Item[]>>({});
     const [isEditable, setIsEditable] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -63,16 +71,15 @@ const TierlistView: React.FC = () => {
                     setIsEditable(true);
                 }
 
-                // Create tiers array from the tierlist
-                // Note: In a real app, you would need to fetch the actual tiers from your backend
-                // For this example, we'll create some placeholder tiers
+                // Create standard tiers with IDs 1-7 mapping to S-F
                 const tiersList: Tier[] = [
-                    { id: 1, name: "S", color: "#FF5252" },
-                    { id: 2, name: "A", color: "#FF9800" },
-                    { id: 3, name: "B", color: "#FFEB3B" },
-                    { id: 4, name: "C", color: "#8BC34A" },
-                    { id: 5, name: "D", color: "#03A9F4" },
-                    { id: 6, name: "F", color: "#9C27B0" },
+                    { id: 1, name: "S", color: TIER_COLORS["S"] },
+                    { id: 2, name: "A", color: TIER_COLORS["A"] },
+                    { id: 3, name: "B", color: TIER_COLORS["B"] },
+                    { id: 4, name: "C", color: TIER_COLORS["C"] },
+                    { id: 5, name: "D", color: TIER_COLORS["D"] },
+                    { id: 6, name: "E", color: TIER_COLORS["E"] },
+                    { id: 7, name: "F", color: TIER_COLORS["F"] },
                 ];
                 setTiers(tiersList);
 
@@ -103,15 +110,15 @@ const TierlistView: React.FC = () => {
 
             const data: Item[] = await response.json();
 
-            // Group items by tier
-            // In a real app, you would group by actual tier IDs from your backend
+            // Group items by tier/rank (1-7 for S-F)
             const groupedItems: Record<number, Item[]> = {
-                1: data.filter(item => item.rank === 1 || item.rank <= 10),
-                2: data.filter(item => item.rank > 10 && item.rank <= 20),
-                3: data.filter(item => item.rank > 20 && item.rank <= 30),
-                4: data.filter(item => item.rank > 30 && item.rank <= 40),
-                5: data.filter(item => item.rank > 40 && item.rank <= 50),
-                6: data.filter(item => item.rank > 50),
+                1: data.filter(item => item.rank === 1),  // S tier
+                2: data.filter(item => item.rank === 2),  // A tier
+                3: data.filter(item => item.rank === 3),  // B tier
+                4: data.filter(item => item.rank === 4),  // C tier
+                5: data.filter(item => item.rank === 5),  // D tier
+                6: data.filter(item => item.rank === 6),  // E tier
+                7: data.filter(item => item.rank === 7),  // F tier
             };
 
             setItems(groupedItems);
@@ -171,8 +178,8 @@ const TierlistView: React.FC = () => {
 
     const handleItemAdd = async (tierId: number, name: string) => {
         try {
-            // In a real app, you would map the tier ID from the component to your actual tier ID
-            // Here we're just using the tier ID directly
+            // The tierId in our component corresponds directly to the rank in the database
+            // S tier (id 1) = rank 1, A tier (id 2) = rank 2, etc.
             const response = await fetch(`http://localhost:8080/api/items`, {
                 method: 'POST',
                 headers: {
@@ -181,8 +188,9 @@ const TierlistView: React.FC = () => {
                 },
                 body: JSON.stringify({
                     name,
+                    rank: tierId, // Use the tier ID as the rank
                     tier: {
-                        id: tierId
+                        id: parseInt(tierlistId || '0') // The actual tierlist ID
                     }
                 }),
             });
@@ -244,7 +252,7 @@ const TierlistView: React.FC = () => {
                     <TouchableOpacity
                         style={styles.editButton}
                         onPress={() => tierlistId && router.push({
-                            pathname: "/edit-tierlists/[id]",
+                            pathname: '/edit-tierlist/[id]',
                             params: { id: tierlistId }
                         })}
                     >

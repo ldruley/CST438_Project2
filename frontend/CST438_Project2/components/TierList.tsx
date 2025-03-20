@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
-import { Item, Tier } from '@/types/tierlist';
+import { Item, Tier, TIER_RANKS, TIER_COLORS } from '@/types/tierlist';
 
 interface TierListProps {
     tiers: Tier[];
@@ -98,7 +98,7 @@ const TierRow: React.FC<{
     };
 
     return (
-        <View style={[styles.tierRow, { backgroundColor: tier.color || '#333333' }]}>
+        <View style={[styles.tierRow, { backgroundColor: tier.color || TIER_COLORS[tier.name as keyof typeof TIER_COLORS] || '#333333' }]}>
             <View style={styles.tierLabel}>
                 {isEditable && onTierNameChange ? (
                     <TextInput
