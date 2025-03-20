@@ -1,22 +1,16 @@
 package com.team9.tierlist.utils;
-import io.jsonwebtoken.*;
-
-import java.security.SignatureException;
-import java.util.Date;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import java.security.Key;
+import jakarta.annotation.PostConstruct;
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,36 +19,46 @@ import java.util.function.Function;
 @Component
 public class JwtTokenUtil {
 
-    @Value("${jwt.secret}")  // Inject the secret key from application.properties
-    private String secretKey;
-
-    @Value("${jwt.expiration}")  // Inject the expiration time from application.properties
+    @Value("${jwt.secret:}")
+    private String secretKeyString;
+    
+    @Value("${jwt.expiration:86400000}")
     private long jwtExpiration;
+    
+    private SecretKey key;
+    
+    @PostConstruct
+    public void init() {
+        // If no key is provided in properties, generate one
+        if (secretKeyString == null || secretKeyString.isEmpty()) {
+            key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+            System.out.println("Generated a secure random key for JWT signing");
+        } else {
+            // Use the key from properties
+            key = Keys.hmacShaKeyFor(secretKeyString.getBytes(StandardCharsets.UTF_8));
+            System.out.println("Using JWT key from application.properties, length: " + secretKeyString.length());
+        }
+    }
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
     public Date extractExpiration(String token) {
-        return extractClaim(token,Claims::getExpiration);
+        return extractClaim(token, Claims::getExpiration);
     }
 
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver){
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
     private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+                .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-    }
-
-    private Key getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-        return Keys.hmacShaKeyFor(keyBytes);
     }
 
     private Boolean isTokenExpired(String token) {
@@ -63,27 +67,22 @@ public class JwtTokenUtil {
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-
         claims.put("authorities", userDetails.getAuthorities());
         return createToken(claims, userDetails.getUsername());
     }
 
-
-    //Generates JWT Token
     public String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .signWith(key)
                 .compact();
     }
 
     public boolean validateToken(String token, UserDetails userDetails) {
-        final  String username = extractUsername(token);
+        final String username = extractUsername(token);
         return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }
-
-
 }

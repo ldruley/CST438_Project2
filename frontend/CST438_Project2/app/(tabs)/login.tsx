@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { View, Text, StyleSheet, TextInput, Button } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Button, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const router = useRouter();
 
@@ -16,33 +18,71 @@ const Login: React.FC = () => {
       return;
     }
 
+    setIsLoading(true);
+    setError('');
+
     try {
-      const response = await fetch('http://localhost:8081/auth/login', {
+      // Create form data to match your Spring endpoint expectations
+      const formData = new URLSearchParams();
+      formData.append('username', username);
+      formData.append('password', password);
+
+
+      const response = await fetch('http://localhost:8080/auth/login', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: JSON.stringify({ username, password }),
+        body: formData.toString(),
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        setError(data.message || 'Invalid username or password');
+      console.log('Response status:', response.status);
+      
+      const responseText = await response.text();
+      console.log('Response body:', responseText);
+      
+      // Try to parse the response as JSON
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        // If response isn't valid JSON, use it as error message
+        setError(responseText || 'Server error occurred');
+        setIsLoading(false);
         return;
       }
-    const data = await response.json();
-    const jwtToken = data.jwtToken;  // Extract the JWT token from the response
 
-    // Store the JWT token in AsyncStorage
-    await AsyncStorage.setItem('jwtToken', jwtToken);
+      if (!response.ok) {
+        setError(data.message || 'Invalid username or password');
+        setIsLoading(false);
+        return;
+      }
+      
+      const jwtToken = data.jwtToken;
+      
+      if (!jwtToken) {
+        setError('Authentication failed: No token received');
+        setIsLoading(false);
+        return;
+      }
 
+      // Store the JWT token in AsyncStorage
+      await AsyncStorage.setItem('jwtToken', jwtToken);
+      
+      // Also store username for displaying in the app
+      await AsyncStorage.setItem('username', username);
 
       setUsername('');
       setPassword('');
       setError('');
+      
+      // Navigate to home screen
       router.push('/home');
     } catch (err) {
-      setError('An error occurred. Please try again later.');
+      console.error('Login error:', err);
+      setError('Network error. Please check your connection and try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -54,20 +94,28 @@ const Login: React.FC = () => {
         <TextInput
           style={styles.input}
           placeholder="Username"
+          placeholderTextColor="#999"
           value={username}
           onChangeText={setUsername}
+          autoCapitalize="none"
+          autoCorrect={false}
         />
         <TextInput
           style={styles.input}
           placeholder="Password"
+          placeholderTextColor="#999"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
         />
 
-        {error && <Text style={styles.error}>{error}</Text>}
+        {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <Button title="Login" onPress={handleLogin} />
+        <Button 
+          title={isLoading ? "Logging in..." : "Login"} 
+          onPress={handleLogin} 
+          disabled={isLoading}
+        />
       </View>
     </LinearGradient>
   );
@@ -84,6 +132,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     alignItems: 'center',
+    width: '80%',
   },
   title: {
     fontSize: 24,
@@ -92,7 +141,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   input: {
-    width: '80%',
+    width: '100%',
     padding: 10,
     marginBottom: 15,
     borderWidth: 1,
@@ -101,8 +150,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   error: {
-    color: 'red',
+    color: '#ff6b6b',
     marginBottom: 10,
+    textAlign: 'center',
   },
 });
 
