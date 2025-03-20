@@ -105,7 +105,6 @@ public class UserService {
     @Transactional
     public boolean createUser(User user) {
        try {
-           user.setPassword(passwordEncoder.encode(user.getPassword()));
            userRepository.save(user);
            return true;
        } catch (Exception e) {
@@ -221,16 +220,6 @@ public class UserService {
     public boolean logoutUser(Long id) {
         
         return true;
-    }
-
-    public boolean putUser(User user){
-        try {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-            userRepository.save(user);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
     }
 
 }
