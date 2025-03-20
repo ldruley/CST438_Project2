@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.team9.tierlist.model.User;
+import com.team9.tierlist.repository.UserRepository;
 import com.team9.tierlist.service.UserService;
 import com.team9.tierlist.utils.JwtTokenUtil;
 
@@ -35,23 +36,93 @@ private final UserService userService;
 private final PasswordEncoder passwordEncoder;
 private final AuthenticationManager authenticationManager;
 private final JwtTokenUtil jwtTokenUtil;
+private final UserRepository userRepository;
 
-    public AuthController(UserService userService, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtTokenUtil jwtTokenUtil) {
+    public AuthController(UserService userService, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtTokenUtil jwtTokenUtil,UserRepository userRepository) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtTokenUtil = jwtTokenUtil;
+        this.userRepository = userRepository;
     }
+
+
+    @PostMapping("/debug-complete")
+public ResponseEntity<?> debugComplete(@RequestParam String username, 
+                                      @RequestParam String password) {
+    System.out.println("Debug complete called for: " + username);
+    
+    // Check if user exists and delete it for clean test
+    User existingUser = userRepository.findByUsername(username);
+    if (existingUser != null) {
+        userRepository.delete(existingUser);
+        System.out.println("Deleted existing user");
+    }
+    
+    // Create new user with encoded password
+    String encodedPassword = passwordEncoder.encode(password);
+    System.out.println("Encoded password: " + encodedPassword);
+    
+    User user = new User();
+    user.setUsername(username);
+    user.setEmail(username + "@test.com");
+    user.setPassword(encodedPassword);
+    user.setAdmin(false);
+    
+    // Save directly to repository
+    userRepository.save(user);
+    System.out.println("Saved user directly to repository");
+    
+    // Verify saved user
+    User savedUser = userRepository.findByUsername(username);
+    boolean passwordMatches = passwordEncoder.matches(password, savedUser.getPassword());
+    System.out.println("Password matches directly: " + passwordMatches);
+    
+    // Try authenticating
+    try {
+        System.out.println("Attempting authentication");
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(username, password)
+        );
+        System.out.println("Authentication successful!");
+        
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String token = jwtTokenUtil.generateToken(userDetails);
+        
+        return ResponseEntity.ok(Map.of(
+            "status", "success",
+            "token", token,
+            "passwordMatches", passwordMatches
+        ));
+    } catch (Exception e) {
+        System.out.println("Authentication failed: " + e.getMessage());
+        e.printStackTrace();
+        return ResponseEntity.ok(Map.of(
+            "status", "failed",
+            "error", e.getMessage(),
+            "passwordMatches", passwordMatches
+        ));
+    }
+}
+    
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestParam String username, @RequestParam String password) {
+        logger.info("User attempting to login: " + username);
         try {
+            logger.info("Attempting to authenticate user: " + username);
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(username, password)
             );
 
+            logger.info("User has been authenticated: " + username);
+
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            logger.info("User details: " + userDetails);
+
             String jwtToken = jwtTokenUtil.generateToken(userDetails);
+            logger.info("JWT Token generated: " + jwtToken);
+
 
             Map<String, Object> response = new HashMap<>();
             response.put("jwtToken", jwtToken);
@@ -59,7 +130,11 @@ private final JwtTokenUtil jwtTokenUtil;
 
             return ResponseEntity.ok(response);
         } catch (AuthenticationException e) {
+
             return ResponseEntity.status(401).body("Authentication failed: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Unexpected error during login: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error during login: " + e.getMessage());
         }
     }
 
@@ -102,53 +177,6 @@ private final JwtTokenUtil jwtTokenUtil;
 
     }
 
-    @PostMapping("/debug-auth")
-public ResponseEntity<?> debugAuth(@RequestParam String username, @RequestParam String password) {
-    try {
-        // Get the user from the database
-        User user = userService.getUserByUsername(username);
-        if (user == null) {
-            return ResponseEntity.status(404).body("User not found in database");
-        }
-        
-        // Check if password matches using passwordEncoder
-        boolean passwordMatches = passwordEncoder.matches(password, user.getPassword());
-        
-        // Try to load the user with UserDetailsService
-        UserDetails userDetails = null;
-        String userDetailsError = null;
-        try {
-             Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(username, password)
-                );
-                userDetails = (UserDetails) authentication.getPrincipal();
-                
-        } catch (Exception e) {
-            userDetailsError = e.getMessage();
-        }
-        
-        // Create response with all debugging info
-        Map<String, Object> response = new HashMap<>();
-        response.put("username", username);
-        response.put("userExistsInDb", (user != null));
-        response.put("passwordMatches", passwordMatches);
-        response.put("storedPasswordPrefix", user.getPassword().substring(0, 10) + "...");
-        response.put("isAdmin", user.isAdmin());
-        response.put("userDetailsLoaded", (userDetails != null));
-        
-        if (userDetails != null) {
-            response.put("userDetailsUsername", userDetails.getUsername());
-            response.put("userDetailsAuthorities", userDetails.getAuthorities().toString());
-        } else {
-            response.put("userDetailsError", userDetailsError);
-        }
-        
-        return ResponseEntity.ok(response);
-    } catch (Exception e) {
-        return ResponseEntity.status(500).body("Error during debug: " + e.getMessage());
-    }
-}
-
     @GetMapping("/debug/auth")
     public ResponseEntity<String> debugAuthentication(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
@@ -169,5 +197,42 @@ public ResponseEntity<?> debugAuth(@RequestParam String username, @RequestParam 
         return ResponseEntity.ok(debug.toString());
     }
 
+    @GetMapping("/test-user-password")
+public ResponseEntity<?> testUserPassword(@RequestParam String username, @RequestParam String password) {
+    System.out.println("Testing user password for: " + username); // Direct system out for guaranteed visibility
+    
+    User user = userService.getUserByUsername(username);
+    if (user == null) {
+        System.out.println("User not found: " + username);
+        return ResponseEntity.status(404).body("User not found");
+    }
+    
+    System.out.println("User found in database");
+    System.out.println("Stored password (encoded): " + user.getPassword());
+    
+    boolean matches = passwordEncoder.matches(password, user.getPassword());
+    System.out.println("Password matches: " + matches);
+    
+    return ResponseEntity.ok(Map.of(
+        "userExists", true,
+        "passwordMatches", matches
+    ));
+}
+
+@GetMapping("/test-encoder")
+public ResponseEntity<?> testEncoder(@RequestParam String rawPassword) {
+    // Encode a password
+    String encoded = passwordEncoder.encode(rawPassword);
+    
+    // Check if it matches
+    boolean matches = passwordEncoder.matches(rawPassword, encoded);
+    
+    Map<String, Object> response = new HashMap<>();
+    response.put("rawPassword", rawPassword);
+    response.put("encoded", encoded);
+    response.put("matches", matches);
+    
+    return ResponseEntity.ok(response);
+}
     
 }
