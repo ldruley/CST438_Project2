@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { View, Text, StyleSheet, TextInput, Button } from 'react-native';
-import { useRouter } from 'expo-router'; // For navigation
+import { View, Text, StyleSheet, TextInput, Button, Alert, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface UserCredentials {
   username: string;
@@ -15,54 +16,73 @@ const CreateAccount: React.FC = () => {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const router = useRouter(); // For navigation to home.tsx
 
   // Handle account creation form submission
   const handleCreateAccount = async (): Promise<void> => {
-      if (!username || !email || !password) {
-        setError('Please fill out all fields.');
+    if (!username || !email || !password) {
+      setError('Please fill out all fields.');
+      return;
+    }
+  
+    setIsLoading(true);
+    setError('');
+  
+    try {
+      console.log("Starting account creation process...");
+      
+      const params = new URLSearchParams();
+      params.append('username', username);
+      params.append('email', email);
+      params.append('password', password);
+      
+      const createResponse = await fetch('http://localhost:8080/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString(),
+      });
+  
+      console.log("Response status:", createResponse.status);
+      const responseText = await createResponse.text();
+      console.log("Response body:", responseText);
+      
+      if (!createResponse.ok) {
+        setError(responseText || 'Failed to create account');
+        setIsLoading(false);
         return;
       }
-
-      try {
-        // Create the user
-        const createResponse = await fetch('http://localhost:8081/api/users/create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, email, password, isAdmin: false }),
-        });
-
-        if (!createResponse.ok) {
-          const data = await createResponse.json();
-          setError(data.message || 'Failed to create account');
-          return;
+  
+      console.log("Account created successfully");
+  
+      // Show success message and then navigate
+      Alert.alert("Success", "Account has been created.", [
+        {
+          text: "OK",
+          onPress: () => {
+            setIsLoading(false);
+  
+            // Clear input fields
+            setUsername('');
+            setEmail('');
+            setPassword('');
+  
+            // Small delay before navigation
+            setTimeout(() => {
+              router.replace('/(tabs)/login'); 
+            }, 500);
+          }
         }
-
-        // Automatically log in the user
-        const loginResponse = await fetch('http://localhost:8080/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }),
-        });
-
-        if (!loginResponse.ok) {
-          setError('Account created, but login failed. Please log in manually.');
-          return;
-        }
-
-        // Extract JWT token from the response
-        const loginData = await loginResponse.json();
-        const jwtToken = loginData.jwtToken;
-
-        // Store JWT token in AsyncStorage
-        await AsyncStorage.setItem('jwtToken', jwtToken);
-
-        // Redirect to home page
-        router.push('/home');
-      } catch (err) {
-        setError('An error occurred. Please try again later.');
-      }
+      ]);
+      
+    } catch (err) {
+      console.error('Error during account creation:', err);
+      setError('An error occurred. Please try again later.');
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -94,7 +114,18 @@ const CreateAccount: React.FC = () => {
 
         {error && <Text style={styles.error}>{error}</Text>}
 
-        <Button title="Create Account" onPress={handleCreateAccount} />
+        <Button 
+          title={isLoading ? "Creating Account..." : "Create Account"} 
+          onPress={handleCreateAccount}
+          disabled={isLoading} 
+        />
+        
+        <View style={styles.loginContainer}>
+          <Text style={styles.loginText}>Already have an account?</Text>
+          <TouchableOpacity onPressIn={() => router.push('/(tabs)/login')}>
+            <Text style={styles.loginLink}>Login here</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </LinearGradient>
   );
@@ -111,6 +142,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     alignItems: 'center',
+    width: '80%',
   },
   title: {
     fontSize: 24,
@@ -119,7 +151,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   input: {
-    width: '80%',
+    width: '100%',
     padding: 10,
     marginBottom: 15,
     borderWidth: 1,
@@ -130,6 +162,19 @@ const styles = StyleSheet.create({
   error: {
     color: 'red',
     marginBottom: 10,
+  },
+  loginContainer: {
+    marginTop: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  loginText: {
+    color: 'white',
+    marginRight: 5,
+  },
+  loginLink: {
+    color: '#4da6ff',
+    fontWeight: 'bold',
   },
 });
 

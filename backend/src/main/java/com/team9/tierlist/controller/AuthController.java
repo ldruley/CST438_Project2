@@ -1,31 +1,30 @@
 package com.team9.tierlist.controller;
 
-import com.team9.tierlist.model.JwtAuthenticationResponse;
-import com.team9.tierlist.model.LoginRequest;
-import com.team9.tierlist.model.User;
-import com.team9.tierlist.service.UserInfoService;
-import com.team9.tierlist.service.UserService;
-import com.team9.tierlist.utils.JwtTokenUtil;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.team9.tierlist.model.User;
+import com.team9.tierlist.repository.UserRepository;
+import com.team9.tierlist.service.UserService;
+import com.team9.tierlist.utils.JwtTokenUtil;
 
-import java.util.HashMap;
-import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 
 @RestController
@@ -37,23 +36,93 @@ private final UserService userService;
 private final PasswordEncoder passwordEncoder;
 private final AuthenticationManager authenticationManager;
 private final JwtTokenUtil jwtTokenUtil;
+private final UserRepository userRepository;
 
-    public AuthController(UserService userService, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtTokenUtil jwtTokenUtil) {
+    public AuthController(UserService userService, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtTokenUtil jwtTokenUtil,UserRepository userRepository) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtTokenUtil = jwtTokenUtil;
+        this.userRepository = userRepository;
     }
+
+
+    @PostMapping("/debug-complete")
+public ResponseEntity<?> debugComplete(@RequestParam String username, 
+                                      @RequestParam String password) {
+    System.out.println("Debug complete called for: " + username);
+    
+    // Check if user exists and delete it for clean test
+    User existingUser = userRepository.findByUsername(username);
+    if (existingUser != null) {
+        userRepository.delete(existingUser);
+        System.out.println("Deleted existing user");
+    }
+    
+    // Create new user with encoded password
+    String encodedPassword = passwordEncoder.encode(password);
+    System.out.println("Encoded password: " + encodedPassword);
+    
+    User user = new User();
+    user.setUsername(username);
+    user.setEmail(username + "@test.com");
+    user.setPassword(encodedPassword);
+    user.setAdmin(false);
+    
+    // Save directly to repository
+    userRepository.save(user);
+    System.out.println("Saved user directly to repository");
+    
+    // Verify saved user
+    User savedUser = userRepository.findByUsername(username);
+    boolean passwordMatches = passwordEncoder.matches(password, savedUser.getPassword());
+    System.out.println("Password matches directly: " + passwordMatches);
+    
+    // Try authenticating
+    try {
+        System.out.println("Attempting authentication");
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(username, password)
+        );
+        System.out.println("Authentication successful!");
+        
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String token = jwtTokenUtil.generateToken(userDetails);
+        
+        return ResponseEntity.ok(Map.of(
+            "status", "success",
+            "token", token,
+            "passwordMatches", passwordMatches
+        ));
+    } catch (Exception e) {
+        System.out.println("Authentication failed: " + e.getMessage());
+        e.printStackTrace();
+        return ResponseEntity.ok(Map.of(
+            "status", "failed",
+            "error", e.getMessage(),
+            "passwordMatches", passwordMatches
+        ));
+    }
+}
+    
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestParam String username, @RequestParam String password) {
+        logger.info("User attempting to login: " + username);
         try {
+            logger.info("Attempting to authenticate user: " + username);
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(username, password)
             );
 
+            logger.info("User has been authenticated: " + username);
+
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            logger.info("User details: " + userDetails);
+
             String jwtToken = jwtTokenUtil.generateToken(userDetails);
+            logger.info("JWT Token generated: " + jwtToken);
+
 
             Map<String, Object> response = new HashMap<>();
             response.put("jwtToken", jwtToken);
@@ -61,7 +130,11 @@ private final JwtTokenUtil jwtTokenUtil;
 
             return ResponseEntity.ok(response);
         } catch (AuthenticationException e) {
+
             return ResponseEntity.status(401).body("Authentication failed: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Unexpected error during login: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error during login: " + e.getMessage());
         }
     }
 
@@ -80,6 +153,13 @@ private final JwtTokenUtil jwtTokenUtil;
         boolean success = userService.createUser(user);
 
         if(success) {
+             User createdUser = userService.getUserByUsername(username);
+              Map<String, Object> response = new HashMap<>();
+            response.put("id", createdUser.getId());
+            response.put("username", createdUser.getUsername());
+            response.put("email", createdUser.getEmail());
+            response.put("isAdmin", createdUser.isAdmin());
+            response.put("message", "User has been created successfully!");
             return ResponseEntity.ok("User has been created!");
         }else {
             return ResponseEntity.internalServerError().body("Unable to create user.");
@@ -116,4 +196,43 @@ private final JwtTokenUtil jwtTokenUtil;
 
         return ResponseEntity.ok(debug.toString());
     }
+
+    @GetMapping("/test-user-password")
+public ResponseEntity<?> testUserPassword(@RequestParam String username, @RequestParam String password) {
+    System.out.println("Testing user password for: " + username); // Direct system out for guaranteed visibility
+    
+    User user = userService.getUserByUsername(username);
+    if (user == null) {
+        System.out.println("User not found: " + username);
+        return ResponseEntity.status(404).body("User not found");
+    }
+    
+    System.out.println("User found in database");
+    System.out.println("Stored password (encoded): " + user.getPassword());
+    
+    boolean matches = passwordEncoder.matches(password, user.getPassword());
+    System.out.println("Password matches: " + matches);
+    
+    return ResponseEntity.ok(Map.of(
+        "userExists", true,
+        "passwordMatches", matches
+    ));
+}
+
+@GetMapping("/test-encoder")
+public ResponseEntity<?> testEncoder(@RequestParam String rawPassword) {
+    // Encode a password
+    String encoded = passwordEncoder.encode(rawPassword);
+    
+    // Check if it matches
+    boolean matches = passwordEncoder.matches(rawPassword, encoded);
+    
+    Map<String, Object> response = new HashMap<>();
+    response.put("rawPassword", rawPassword);
+    response.put("encoded", encoded);
+    response.put("matches", matches);
+    
+    return ResponseEntity.ok(response);
+}
+    
 }

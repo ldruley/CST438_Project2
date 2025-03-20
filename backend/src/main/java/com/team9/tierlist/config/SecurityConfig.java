@@ -31,12 +31,13 @@ public class SecurityConfig {
         this.userDetailsService = userDetailsService;
     }
 
+    //disabled for testing
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws  Exception {
         httpSecurity
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/login", "/auth/register", "/auth/logout").permitAll()
+                        .requestMatchers("/auth/login", "/auth/register", "/auth/logout","/auth/test-user-password", "/auth/test-encoder", "/auth/debug-complete").permitAll()
                         .requestMatchers("/user/deleteUser/**", "/user/all", "/user/put").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/user/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
                         .anyRequest().authenticated()
@@ -48,6 +49,21 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return httpSecurity.build();
     }
+
+    //testing purposes
+   /* @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+        httpSecurity
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        // This will allow all requests without authentication (for testing)
+                        .anyRequest().permitAll()
+                )
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                );
+        return httpSecurity.build();
+    }*/
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
