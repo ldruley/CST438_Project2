@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Column;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
@@ -32,6 +33,9 @@ public class Tier {
 
     private String description;
 
+    @Column(name = "is_public", nullable = false)
+    private Boolean isPublic = false; // Default to private
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     @JsonIgnoreProperties({"password", "tiers"})
@@ -52,11 +56,12 @@ public class Tier {
     }
 
     // Full constructor
-    public Tier(String name, String color, String description, User user) {
+    public Tier(String name, String color, String description, User user, Boolean isPublic) {
         this.name = name;
         this.color = color;
         this.description = description;
         this.user = user;
+        this.isPublic = isPublic != null ? isPublic : false;
     }
 
     // Getters and Setters
@@ -116,6 +121,14 @@ public class Tier {
     public void removeItem(Item item) {
         items.remove(item);
         item.setTier(null);
+    }
+
+    public Boolean getIsPublic() {
+        return isPublic;
+    }
+
+    public void setIsPublic(Boolean isPublic) {
+        this.isPublic = isPublic;
     }
 
     @Override

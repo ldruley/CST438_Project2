@@ -30,6 +30,7 @@ public class SecurityConfig {
         this.userDetailsService = userDetailsService;
     }
 
+    //disabled for testing
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws  Exception {
         httpSecurity
@@ -47,6 +48,21 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return httpSecurity.build();
     }
+
+    //testing purposes
+   /* @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+        httpSecurity
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        // This will allow all requests without authentication (for testing)
+                        .anyRequest().permitAll()
+                )
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                );
+        return httpSecurity.build();
+    }*/
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {

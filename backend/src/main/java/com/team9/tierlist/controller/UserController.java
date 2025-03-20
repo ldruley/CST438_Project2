@@ -145,4 +145,29 @@ public ResponseEntity<?> updatePassword(
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
+
+    @PutMapping("/{userId}/activetier/{tierlistId}")
+    public ResponseEntity<User> setActiveTierlist(@PathVariable Long userId, @PathVariable Long tierlistId) {
+        User updatedUser = userService.setActiveTierlist(userId, tierlistId);
+        if (updatedUser != null) {
+            return new ResponseEntity<>(updatedUser, HttpStatus.OK);
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    @GetMapping("/{userId}/activetier")
+    public ResponseEntity<?> getActiveTierlist(@PathVariable Long userId) {
+        Long activeTierlistId = userService.getActiveTierlistId(userId);
+        if (activeTierlistId != null) {
+            // You might want to return the actual tierlist instead of just the ID
+            return new ResponseEntity<>(Map.of("activeTierlistId", activeTierlistId), HttpStatus.OK);
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    @GetMapping("/{userId}/hasactivetier")
+    public ResponseEntity<?> hasActiveTierlist(@PathVariable Long userId) {
+        boolean hasActive = userService.hasActiveTierlist(userId);
+        return new ResponseEntity<>(Map.of("hasActiveTierlist", hasActive), HttpStatus.OK);
+    }
 }

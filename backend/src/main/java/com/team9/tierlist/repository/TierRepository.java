@@ -21,4 +21,13 @@ public interface TierRepository extends JpaRepository<Tier, Long> {
 
     // Check if a tier with this name already exists for a specific user
     boolean existsByNameIgnoreCaseAndUserId(String name, Long userId);
+
+    // Find all public tiers
+    List<Tier> findByIsPublicTrue();
+
+    // Find public tiers by user
+    List<Tier> findByUserIdAndIsPublicTrue(Long userId);
+
+    // Find public tiers containing the search term
+    List<Tier> findByNameContainingIgnoreCaseAndIsPublicTrue(String name);
 }
