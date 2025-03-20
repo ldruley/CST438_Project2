@@ -13,10 +13,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.team9.tierlist.model.User;
 import com.team9.tierlist.service.UserService;
+
 import jakarta.validation.Valid;
 
 @CrossOrigin(origins = "http://localhost:8081")
@@ -58,6 +68,47 @@ public class UserController {
     public boolean addUser(@RequestBody User user){
         return  userService.createUser(user);
     }
+
+    @GetMapping("/current")
+public ResponseEntity<?> getCurrentUser(Principal principal) {
+    if (principal == null) {
+        return new ResponseEntity<>("Not authenticated", HttpStatus.UNAUTHORIZED);
+    }
+    
+    User user = userService.getUserByUsername(principal.getName());
+    if (user != null) {
+        return new ResponseEntity<>(user, HttpStatus.OK);
+    }
+    return new ResponseEntity<>("User not found", HttpStatus.NOT_FOUND);
+}
+
+    @PatchMapping("/{id}/password")
+public ResponseEntity<?> updatePassword(
+        @PathVariable Long id,
+        @RequestBody Map<String, String> passwordData,
+        Principal principal) {
+    
+    // Check if user is trying to update their own password
+    User user = userService.getUserByUsername(principal.getName());
+    if (user == null || !user.getId().equals(id)) {
+        return new ResponseEntity<>("Not authorized to update this user's password", HttpStatus.FORBIDDEN);
+    }
+    
+    String currentPassword = passwordData.get("currentPassword");
+    String newPassword = passwordData.get("newPassword");
+    
+    if (currentPassword == null || newPassword == null) {
+        return new ResponseEntity<>("Current password and new password are required", HttpStatus.BAD_REQUEST);
+    }
+    
+    boolean isUpdated = userService.updatePassword(id, currentPassword, newPassword);
+    
+    if (isUpdated) {
+        return new ResponseEntity<>("Password updated successfully", HttpStatus.OK);
+    } else {
+        return new ResponseEntity<>("Failed to update password. Current password may be incorrect.", HttpStatus.BAD_REQUEST);
+    }
+}
 
     @GetMapping("{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {

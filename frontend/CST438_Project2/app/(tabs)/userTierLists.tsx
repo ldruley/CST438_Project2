@@ -24,18 +24,14 @@ const LandingPage = () => {
     <LinearGradient colors={['#000000', '#808080']} style={styles.container}>
       <View style={styles.overlay}>
         <Text style={styles.greeting}>Hello {username}!</Text>
-        <Text style={styles.listText}>Current Active List: {activeList}</Text>
+        <Text style={styles.listText}>Your Active Tier Lists: {activeList}</Text>
         
-        <TouchableOpacity style={styles.button} onPress={() => router.push('/userTierLists')}>
-          <Text style={styles.buttonText}>See All Lists</Text>
+        <TouchableOpacity style={styles.button} onPress={() => router.push('/TierList')}>
+          <Text style={styles.buttonText}>Create a Tierlist</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.button} onPress={() => router.push('/welcome')}>
-          <Text style={styles.buttonText}>View Public Lists</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.button} onPress={() => router.push('/userProfile')}>
-          <Text style={styles.buttonText}>Modify Account</Text>
+        <TouchableOpacity style={styles.button} onPress={() => router.push('/TierList')}>
+          <Text style={styles.buttonText}>Edit an existing Tierlist</Text>
         </TouchableOpacity>
       </View>
     </LinearGradient>

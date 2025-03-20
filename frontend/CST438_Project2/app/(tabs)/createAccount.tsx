@@ -57,26 +57,34 @@ const CreateAccount: React.FC = () => {
       }
   
       console.log("Account created successfully");
-  
-      // Show success message and then navigate
-      Alert.alert("Success", "Account has been created.", [
-        {
-          text: "OK",
-          onPress: () => {
-            setIsLoading(false);
-  
-            // Clear input fields
-            setUsername('');
-            setEmail('');
-            setPassword('');
-  
-            // Small delay before navigation
-            setTimeout(() => {
-              router.replace('/(tabs)/login'); 
-            }, 500);
+      
+      // Reset loading state immediately to unfreeze the UI
+      setIsLoading(false);
+      
+      // Clear input fields
+      setUsername('');
+      setEmail('');
+      setPassword('');
+      
+      // Instead of using Alert, navigate directly
+      console.log("Navigating to login page directly");
+      
+      // Add a small delay before navigation to ensure state updates are processed
+      setTimeout(() => {
+        try {
+          console.log("Executing navigation to login");
+          router.replace('/login');
+        } catch (navError) {
+          console.error("Navigation error:", navError);
+          // Fallback navigation attempt
+          try {
+            console.log("Trying fallback navigation");
+            router.push('/login');
+          } catch (fallbackError) {
+            console.error("Fallback navigation failed:", fallbackError);
           }
         }
-      ]);
+      }, 300);
       
     } catch (err) {
       console.error('Error during account creation:', err);
@@ -122,7 +130,7 @@ const CreateAccount: React.FC = () => {
         
         <View style={styles.loginContainer}>
           <Text style={styles.loginText}>Already have an account?</Text>
-          <TouchableOpacity onPressIn={() => router.push('/(tabs)/login')}>
+          <TouchableOpacity onPressIn={() => router.push('/login')}>
             <Text style={styles.loginLink}>Login here</Text>
           </TouchableOpacity>
         </View>
