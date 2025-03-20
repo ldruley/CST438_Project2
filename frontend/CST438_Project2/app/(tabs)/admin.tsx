@@ -1,8 +1,6 @@
 import {StyleSheet, Image, Platform, View, Text, TextInput, TouchableOpacity, Button, ScrollView} from 'react-native';
 
 import {useState,useEffect} from "react";
-import axios from "axios";
-import {sync} from "glob";
 
 interface CustomInputProps {
     placeholder: string;
