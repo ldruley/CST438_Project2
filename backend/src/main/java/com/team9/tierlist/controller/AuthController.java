@@ -199,7 +199,7 @@ public ResponseEntity<?> debugComplete(@RequestParam String username,
 
     @GetMapping("/test-user-password")
 public ResponseEntity<?> testUserPassword(@RequestParam String username, @RequestParam String password) {
-    System.out.println("Testing user password for: " + username); // Direct system out for guaranteed visibility
+    System.out.println("Testing user password for: " + username); 
     
     User user = userService.getUserByUsername(username);
     if (user == null) {
@@ -219,20 +219,23 @@ public ResponseEntity<?> testUserPassword(@RequestParam String username, @Reques
     ));
 }
 
-@GetMapping("/test-encoder")
-public ResponseEntity<?> testEncoder(@RequestParam String rawPassword) {
-    // Encode a password
-    String encoded = passwordEncoder.encode(rawPassword);
-    
-    // Check if it matches
-    boolean matches = passwordEncoder.matches(rawPassword, encoded);
-    
-    Map<String, Object> response = new HashMap<>();
-    response.put("rawPassword", rawPassword);
-    response.put("encoded", encoded);
-    response.put("matches", matches);
-    
-    return ResponseEntity.ok(response);
-}
+@GetMapping("/setup-admin")
+    public String setupAdmin() {
+        if (!userRepository.existsByIsAdminTrue()) {
+            User admin = new User();
+            admin.setUsername("admin");
+            admin.setEmail("admin@example.com");
+            
+            // This will use the exact same encoder your app uses for authentication
+            String encodedPassword = passwordEncoder.encode("admin");
+            admin.setPassword(encodedPassword);
+            admin.setAdmin(true);
+            
+            userRepository.save(admin);
+            
+            return "Admin created with password 'admin'. Encoded password: " + encodedPassword;
+        }
+        return "Admin already exists";
+    }
     
 }

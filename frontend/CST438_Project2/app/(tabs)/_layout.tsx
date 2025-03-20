@@ -29,14 +29,23 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
+          href: null,
           title: 'Index',
+          tabBarStyle: { display: 'none' },
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
-      />npm
+      />
       <Tabs.Screen
         name="home"
         options={{
           title: 'Home',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+        }}
+      />
+            <Tabs.Screen
+        name="welcome"
+        options={{
+          title: 'Tier List',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
         }}
       />
@@ -50,7 +59,18 @@ export default function TabLayout() {
             <Tabs.Screen
         name="login"
         options={{
+          href: null,
           title: 'Login',
+          tabBarStyle: { display: 'none' },
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+        }}
+      />
+                  <Tabs.Screen
+        name="createAccount"
+        options={{
+          href: null,
+          title: 'createAccount',
+          tabBarStyle: { display: 'none' },
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
         }}
       />

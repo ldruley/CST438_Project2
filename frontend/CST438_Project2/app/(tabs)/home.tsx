@@ -1,39 +1,46 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Button, StyleSheet, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useAuthRequest, makeRedirectUri } from 'expo-auth-session'; 
-import { useNavigation } from '@react-navigation/native'; 
-import { router } from 'expo-router';
-import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
 
-export default function LandingScreen() {
+const LandingPage = () => {
+  const [username, setUsername] = useState('');
+  const [activeList, setActiveList] = useState('No active list');
+  const router = useRouter();
 
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const storedUsername = await AsyncStorage.getItem('username');
+      setUsername(storedUsername || 'Guest');
 
-
-  const navigation = useNavigation();  // Use useNavigation hook to access navigation
+      const storedList = await AsyncStorage.getItem('activeList');
+      setActiveList(storedList || 'No active list');
+    };
+    fetchUserData();
+  }, []);
 
   return (
     <LinearGradient colors={['#000000', '#808080']} style={styles.container}>
       <View style={styles.overlay}>
-        <Text style={styles.title}>Welcome to Our App</Text>
-        <Text style={styles.subtitle}>Login or create an account to continue</Text>
-
-        {/* OAuth Login Button */}
-        <TouchableOpacity style={styles.button} onPress={() => router.replace('/login')}>
-          <Text style={styles.buttonText}>Log in!</Text>
+        <Text style={styles.greeting}>Hello {username}!</Text>
+        <Text style={styles.listText}>Current Active List: {activeList}</Text>
+        
+        <TouchableOpacity style={styles.button} onPress={() => router.push('/tierList')}>
+          <Text style={styles.buttonText}>See All Lists</Text>
         </TouchableOpacity>
-
-        {/* Create Account Button */}
-        <TouchableOpacity 
-          style={[styles.button, styles.createAccountButton]} 
-          onPress={() =>router.replace('/createAccount')} 
-        >
-          <Text style={styles.buttonText}>Create Account</Text>
+        
+        <TouchableOpacity style={styles.button} onPress={() => router.push('/TierList')}>
+          <Text style={styles.buttonText}>View Public Lists</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.button} onPress={() => router.push('/userProfile')}>
+          <Text style={styles.buttonText}>Modify Account</Text>
         </TouchableOpacity>
       </View>
     </LinearGradient>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -46,31 +53,31 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     alignItems: 'center',
+    width: '80%',
   },
-  title: {
+  greeting: {
     fontSize: 24,
     fontWeight: 'bold',
     color: 'white',
-    marginBottom: 10,
+    marginBottom: 20,
   },
-  subtitle: {
-    fontSize: 16,
-    color: 'lightgray',
+  listText: {
+    fontSize: 18,
+    color: 'white',
     marginBottom: 20,
   },
   button: {
-    backgroundColor: '#333',
-    paddingVertical: 12,
-    paddingHorizontal: 30,
+    backgroundColor: '#444',
+    padding: 10,
     borderRadius: 8,
     marginVertical: 5,
-  },
-  createAccountButton: {
-    backgroundColor: '#555',
+    width: '100%',
+    alignItems: 'center',
   },
   buttonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: 'bold',
   },
 });
+
+export default LandingPage;

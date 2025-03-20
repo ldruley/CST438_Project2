@@ -1,20 +1,17 @@
 package com.team9.tierlist.service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.team9.tierlist.model.User;
 import com.team9.tierlist.repository.UserRepository;
-
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.beans.factory.annotation.Value;
 
 @Service
 public class UserService {
@@ -127,9 +124,9 @@ public class UserService {
 
         // Create the admin user
         User admin = new User();
-        admin.setUsername(adminUsername);
+        admin.setUsername("admin");
         admin.setEmail("admin@example.com");
-        admin.setPassword(passwordEncoder.encode(adminPassword));  // Hash the password
+        admin.setPassword(passwordEncoder.encode("admin"));
         admin.setAdmin(true);
 
         // Save the admin user
@@ -208,6 +205,41 @@ public class UserService {
         }
         return false;
     }
+
+    /**
+ * Updates a user's password after verifying the current password
+ * 
+ * @param id User ID
+ * @param currentPassword The current password for verification
+ * @param newPassword The new password to set
+ * @return true if password was updated successfully, false otherwise
+ */
+@Transactional
+public boolean updatePassword(Long id, String currentPassword, String newPassword) {
+    Optional<User> userOpt = getUserById(id);
+    
+    if (userOpt.isEmpty()) {
+        return false;
+    }
+    
+    User user = userOpt.get();
+    
+    // Verify current password
+    if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+        return false;
+    }
+    
+    // Set new password (encode it first)
+    user.setPassword(passwordEncoder.encode(newPassword));
+    
+    // Save user
+    try {
+        userRepository.save(user);
+        return true;
+    } catch (Exception e) {
+        return false;
+    }
+}
 
     
         /**
