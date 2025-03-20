@@ -218,24 +218,4 @@ public ResponseEntity<?> testUserPassword(@RequestParam String username, @Reques
         "passwordMatches", matches
     ));
 }
-
-@GetMapping("/setup-admin")
-    public String setupAdmin() {
-        if (!userRepository.existsByIsAdminTrue()) {
-            User admin = new User();
-            admin.setUsername("admin");
-            admin.setEmail("admin@example.com");
-            
-            // This will use the exact same encoder your app uses for authentication
-            String encodedPassword = passwordEncoder.encode("admin");
-            admin.setPassword(encodedPassword);
-            admin.setAdmin(true);
-            
-            userRepository.save(admin);
-            
-            return "Admin created with password 'admin'. Encoded password: " + encodedPassword;
-        }
-        return "Admin already exists";
-    }
-    
 }

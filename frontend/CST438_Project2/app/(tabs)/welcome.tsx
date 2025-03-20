@@ -1,5 +1,7 @@
 import { StyleSheet, Image, Platform, View, TextInput, Button } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Text } from 'react-native';
 import { FunctionComponent  } from 'react';
 import React from 'react';
 import {useState} from "react";
