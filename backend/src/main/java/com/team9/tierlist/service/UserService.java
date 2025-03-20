@@ -111,7 +111,8 @@ public class UserService {
            return false;
        }
     }
-        /**
+
+    /**
      * Creates a default admin if one doesn't already exist.
      */
     @Transactional
@@ -188,6 +189,10 @@ public class UserService {
                 user.setAdmin((Boolean) updates.get("isAdmin"));
             }
 
+            if (updates.containsKey("activeTierlistId")) {
+                user.setActiveTierlistId((Long) updates.get("activeTierlistId"));
+            }
+
             return userRepository.save(user);
         }
         return null;
@@ -222,4 +227,23 @@ public class UserService {
         return true;
     }
 
+    public User setActiveTierlist(Long userId, Long tierlistId) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            user.setActiveTierlistId(tierlistId);
+            return userRepository.save(user);
+        }
+        return null;
+    }
+
+    public Long getActiveTierlistId(Long userId) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        return userOpt.map(User::getActiveTierlistId).orElse(null);
+    }
+
+    public boolean hasActiveTierlist(Long userId) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        return userOpt.isPresent() && userOpt.get().getActiveTierlistId() != null;
+    }
 }

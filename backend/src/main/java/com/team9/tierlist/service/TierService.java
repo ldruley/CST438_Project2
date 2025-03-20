@@ -170,6 +170,10 @@ public class TierService {
                 tier.setDescription((String) updates.get("description"));
             }
 
+            if (updates.containsKey("isPublic")) {
+                tier.setIsPublic((Boolean) updates.get("isPublic"));
+            }
+
             return tierRepository.save(tier);
         }
         return null;
@@ -185,6 +189,15 @@ public class TierService {
     @Transactional
     public boolean deleteTier(Long id) {
         if (tierRepository.existsById(id)) {
+            // Find all users who have this as their active tierlist
+            List<User> users = userRepository.findByActiveTierlistId(id);
+
+            // Update those users to not have an active tierlist
+            for (User user : users) {
+                user.setActiveTierlistId(null);
+                userRepository.save(user);
+            }
+
             tierRepository.deleteById(id);
             return true;
         }
@@ -200,5 +213,48 @@ public class TierService {
      */
     public boolean existsByNameAndUserId(String name, Long userId) {
         return tierRepository.existsByNameIgnoreCaseAndUserId(name, userId);
+    }
+
+    public Optional<Tier> getActiveTierlistForUser(Long userId) {
+        User user = userRepository.findById(userId).orElse(null);
+        if (user != null && user.getActiveTierlistId() != null) {
+            return tierRepository.findById(user.getActiveTierlistId());
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Gets all public tierlists
+     */
+    public List<Tier> getAllPublicTiers() {
+        return tierRepository.findByIsPublicTrue();
+    }
+
+    /**
+     * Gets public tierlists for a specific user
+     */
+    public List<Tier> getPublicTiersByUserId(Long userId) {
+        return tierRepository.findByUserIdAndIsPublicTrue(userId);
+    }
+
+    /**
+     * Search for public tierlists by name
+     */
+    public List<Tier> searchPublicTiersByName(String name) {
+        return tierRepository.findByNameContainingIgnoreCaseAndIsPublicTrue(name);
+    }
+
+    /**
+     * Update the public/private status of a tierlist
+     */
+    @Transactional
+    public Tier toggleTierlistVisibility(Long tierId, Boolean isPublic) {
+        Optional<Tier> tierOpt = tierRepository.findById(tierId);
+        if (tierOpt.isPresent()) {
+            Tier tier = tierOpt.get();
+            tier.setIsPublic(isPublic);
+            return tierRepository.save(tier);
+        }
+        return null;
     }
 }

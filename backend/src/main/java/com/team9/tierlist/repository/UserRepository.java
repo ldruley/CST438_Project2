@@ -27,4 +27,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     //check if an admin exists
     boolean existsByIsAdminTrue();
+
+    // Find users by active tierlist ID
+    List<User> findByActiveTierlistId(Long activeTierlistId);
 }

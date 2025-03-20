@@ -43,6 +43,9 @@ public class User {
     @NotNull(message = "Role is required")
     boolean isAdmin;
 
+    @Column(name = "active_tierlist_id")
+    private Long activeTierlistId;
+
     @OneToMany(mappedBy = "user")
     @JsonIgnoreProperties("user")
     private List<Tier> tiers = new ArrayList<>();
@@ -97,6 +100,14 @@ public class User {
 
     public void setAdmin(boolean isAdmin) {
         this.isAdmin = isAdmin;
+    }
+
+    public Long getActiveTierlistId() {
+        return activeTierlistId;
+    }
+
+    public void setActiveTierlistId(Long activeTierlistId) {
+        this.activeTierlistId = activeTierlistId;
     }
 
     public List<Tier> getTiers() {
