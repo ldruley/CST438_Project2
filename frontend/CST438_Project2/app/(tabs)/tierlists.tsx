@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import {StyleSheet, View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert, ScrollView} from 'react-native';
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {TIER_COLORS, Tierlist} from '@/types/tierlist';
+import { TIER_COLORS, Tierlist } from '@/types/tierlist';
 import CompactTierlistView from '@/components/CompactTierlistView';
 
 const TierlistsScreen: React.FC = () => {
@@ -15,65 +17,70 @@ const TierlistsScreen: React.FC = () => {
     const [activeTierlistId, setActiveTierlistId] = useState<number | null>(null);
     const [activeTierlist, setActiveTierlist] = useState<Tierlist | null>(null);
 
-    // Fetch user data and JWT token on component mount
-    useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                console.log('Fetching user data from AsyncStorage...');
-                const token = await AsyncStorage.getItem('jwtToken');
-                const storedUserId = await AsyncStorage.getItem('userId');
+    // This hook will run when the component mounts and again every time the screen gains focus
+    useFocusEffect(
+        useCallback(() => {
+            console.log('Tierlists screen focused - refreshing data');
+            setIsLoading(true);
 
-                console.log(`Token exists: ${!!token}, User ID exists: ${!!storedUserId}`);
+            const fetchUserData = async () => {
+                try {
+                    console.log('Fetching user data from AsyncStorage...');
+                    const token = await AsyncStorage.getItem('jwtToken');
+                    const storedUserId = await AsyncStorage.getItem('userId');
 
-                if (token) {
-                    setJwtToken(token);
-                    if (storedUserId) {
-                        setUserId(parseInt(storedUserId));
+                    console.log(`Token exists: ${!!token}, User ID exists: ${!!storedUserId}`);
+
+                    if (token) {
+                        setJwtToken(token);
+                        if (storedUserId) {
+                            const parsedUserId = parseInt(storedUserId);
+                            setUserId(parsedUserId);
+
+                            // Now fetch the tierlists and active tierlist
+                            await Promise.all([
+                                fetchTierlists(token, parsedUserId),
+                                fetchActiveTierlist(token, parsedUserId)
+                            ]);
+                        } else {
+                            console.log('No user ID found in storage');
+                            setUserId(null);
+                            setIsLoading(false);
+                        }
                     } else {
-                        console.log('No user ID found in storage');
+                        console.log('No JWT token found, redirecting to login');
+                        setJwtToken(null);
                         setUserId(null);
+                        setIsLoading(false);
+                        // If no token, redirect to login
+                        router.replace('/login');
                     }
-                } else {
-                    console.log('No JWT token found, redirecting to login');
+                } catch (error) {
+                    console.error('Error fetching user data:', error);
                     setJwtToken(null);
                     setUserId(null);
-                    // If no token, redirect to login
-                    router.replace('/login');
+                    setIsLoading(false);
                 }
-            } catch (error) {
-                console.error('Error fetching user data:', error);
-                setJwtToken(null);
-                setUserId(null);
-                setIsLoading(false);
-            }
-        };
+            };
 
-        fetchUserData();
-    }, []);
+            fetchUserData();
 
-    // Fetch tierlists when token is available
-    useEffect(() => {
-        if (jwtToken && userId) {
-            fetchTierlists();
-            fetchActiveTierlist();
-        } else if (jwtToken === null && userId === null) {
-            // Still loading user data
-        } else {
-            // We have attempted to load token/userId but they don't exist
-            setIsLoading(false);
-        }
-    }, [jwtToken, userId]);
+            // Clean up function (optional)
+            return () => {
+                // Any cleanup if needed
+            };
+        }, []) // Empty dependency array means this runs on every focus
+    );
 
-    const fetchTierlists = async () => {
-        setIsLoading(true);
+    const fetchTierlists = async (token: string, uid: number) => {
         try {
-            console.log(`Fetching tierlists for user ID: ${userId} with token: ${jwtToken?.substring(0, 10)}...`);
+            console.log(`Fetching tierlists for user ID: ${uid} with token: ${token?.substring(0, 10)}...`);
 
             // Fetch user's tierlists
-            const response = await fetch(`http://localhost:8080/api/tiers/user/${userId}`, {
+            const response = await fetch(`http://localhost:8080/api/tiers/user/${uid}`, {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${jwtToken}`,
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
@@ -106,13 +113,13 @@ const TierlistsScreen: React.FC = () => {
         }
     };
 
-    const fetchActiveTierlist = async () => {
+    const fetchActiveTierlist = async (token: string, uid: number) => {
         try {
             // First check if user has an active tierlist
-            const response = await fetch(`http://localhost:8080/api/users/${userId}/activetier`, {
+            const response = await fetch(`http://localhost:8080/api/users/${uid}/activetier`, {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${jwtToken}`,
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
             });
@@ -126,7 +133,7 @@ const TierlistsScreen: React.FC = () => {
                     // Fetch the actual tierlist details
                     const tierlistResponse = await fetch(`http://localhost:8080/api/tiers/${data.activeTierlistId}`, {
                         headers: {
-                            'Authorization': `Bearer ${jwtToken}`,
+                            'Authorization': `Bearer ${token}`,
                         },
                     });
 
@@ -134,11 +141,21 @@ const TierlistsScreen: React.FC = () => {
                         const tierlistData = await tierlistResponse.json();
                         setActiveTierlist(tierlistData);
                         console.log('Active tierlist loaded:', tierlistData.name);
+                    } else {
+                        setActiveTierlist(null);
                     }
+                } else {
+                    setActiveTierlistId(null);
+                    setActiveTierlist(null);
                 }
+            } else {
+                setActiveTierlistId(null);
+                setActiveTierlist(null);
             }
         } catch (error) {
             console.error('Error fetching active tierlist:', error);
+            setActiveTierlistId(null);
+            setActiveTierlist(null);
         }
     };
 
@@ -218,12 +235,19 @@ const TierlistsScreen: React.FC = () => {
                         <View style={styles.activeTierlistHeader}>
                             <Text style={styles.activeTierlistTitle}>Active Tierlist: {activeTierlist.name}</Text>
 
-                            <TouchableOpacity
-                                style={styles.viewActiveButton}
-                                onPress={() => handleViewTierlist(activeTierlistId)}
-                            >
-                                <Text style={styles.viewActiveButtonText}>View Full</Text>
-                            </TouchableOpacity>
+                            <View style={styles.activeRightSection}>
+                                {activeTierlist.isPublic && (
+                                    <View style={styles.publicBadgeActive}>
+                                        <Text style={styles.publicText}>Public</Text>
+                                    </View>
+                                )}
+                                <TouchableOpacity
+                                    style={styles.viewActiveButton}
+                                    onPress={() => handleViewTierlist(activeTierlistId)}
+                                >
+                                    <Text style={styles.viewActiveButtonText}>View Full</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
 
                         <View style={styles.compactViewContainer}>
@@ -526,6 +550,18 @@ const styles = StyleSheet.create({
     debugButtonText: {
         color: 'white',
     },
+    activeRightSection: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    publicBadgeActive: {
+        backgroundColor: '#32CD32',
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        borderRadius: 4,
+        marginRight: 8,
+    },
+
 });
 
 export default TierlistsScreen;

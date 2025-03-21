@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import {useFocusEffect, useRouter} from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Tierlist } from '@/types/tierlist';
 import CompactTierlistView from '@/components/CompactTierlistView';
@@ -14,33 +14,37 @@ export default function WelcomeScreen() {
   const [jwtToken, setJwtToken] = useState<string | null>(null);
   const [activeTierlist, setActiveTierlist] = useState<Tierlist | null>(null);
 
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      try {
-        const token = await AsyncStorage.getItem('jwtToken');
-        const storedUsername = await AsyncStorage.getItem('username');
-        const storedUserId = await AsyncStorage.getItem('userId');
+  useFocusEffect(
+      useCallback(() => {
+        const checkAuthStatus = async () => {
+          try {
+            const token = await AsyncStorage.getItem('jwtToken');
+            const storedUsername = await AsyncStorage.getItem('username');
+            const storedUserId = await AsyncStorage.getItem('userId');
 
-        if (!token || !storedUserId) {
-          console.log('No auth token or user ID found, redirecting to login');
-          router.replace('/(tabs)/login');
-          return;
-        }
+            if (!token || !storedUserId) {
+              console.log('No auth token or user ID found, redirecting to login');
+              router.replace('/(tabs)/login');
+              return;
+            }
 
-        setJwtToken(token);
-        setUsername(storedUsername || 'User');
-        setUserId(parseInt(storedUserId));
+            setJwtToken(token);
+            setUsername(storedUsername || 'User');
+            setUserId(parseInt(storedUserId));
 
-        await fetchActiveTierlist(token, parseInt(storedUserId));
-      } catch (error) {
-        console.error('Error checking auth status:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+            await fetchActiveTierlist(token, parseInt(storedUserId));
+          } catch (error) {
+            console.error('Error checking auth status:', error);
+          } finally {
+            setIsLoading(false);
+          }
+        };
 
-    checkAuthStatus();
-  }, []);
+        console.log('Welcome screen is focused - refreshing data');
+        setIsLoading(true);
+        checkAuthStatus();
+      }, [])  // Empty dependency array means this runs on every focus
+  );
 
   const fetchActiveTierlist = async (token: string, uid: number) => {
     try {
