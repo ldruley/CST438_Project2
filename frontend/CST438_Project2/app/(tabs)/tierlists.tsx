@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native';
+import {StyleSheet, View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert, ScrollView} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {TIER_COLORS, Tierlist} from '@/types/tierlist';
+import CompactTierlistView from '@/components/CompactTierlistView';
 
 const TierlistsScreen: React.FC = () => {
     const router = useRouter();
@@ -12,6 +13,7 @@ const TierlistsScreen: React.FC = () => {
     const [jwtToken, setJwtToken] = useState<string | null>(null);
     const [userId, setUserId] = useState<number | null>(null);
     const [activeTierlistId, setActiveTierlistId] = useState<number | null>(null);
+    const [activeTierlist, setActiveTierlist] = useState<Tierlist | null>(null);
 
     // Fetch user data and JWT token on component mount
     useEffect(() => {
@@ -106,6 +108,7 @@ const TierlistsScreen: React.FC = () => {
 
     const fetchActiveTierlist = async () => {
         try {
+            // First check if user has an active tierlist
             const response = await fetch(`http://localhost:8080/api/users/${userId}/activetier`, {
                 method: 'GET',
                 headers: {
@@ -119,6 +122,19 @@ const TierlistsScreen: React.FC = () => {
                 if (data.activeTierlistId) {
                     setActiveTierlistId(data.activeTierlistId);
                     console.log(`Active tierlist ID: ${data.activeTierlistId}`);
+
+                    // Fetch the actual tierlist details
+                    const tierlistResponse = await fetch(`http://localhost:8080/api/tiers/${data.activeTierlistId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${jwtToken}`,
+                        },
+                    });
+
+                    if (tierlistResponse.ok) {
+                        const tierlistData = await tierlistResponse.json();
+                        setActiveTierlist(tierlistData);
+                        console.log('Active tierlist loaded:', tierlistData.name);
+                    }
                 }
             }
         } catch (error) {
@@ -140,6 +156,13 @@ const TierlistsScreen: React.FC = () => {
 
             if (response.ok) {
                 setActiveTierlistId(tierlistId);
+
+                // Update the active tierlist in the state
+                const selectedTierlist = tierlists.find(t => t.id === tierlistId);
+                if (selectedTierlist) {
+                    setActiveTierlist(selectedTierlist);
+                }
+
                 Alert.alert("Success", "Active tierlist updated successfully!");
             } else {
                 Alert.alert("Error", "Failed to update active tierlist");
@@ -188,71 +211,99 @@ const TierlistsScreen: React.FC = () => {
                 </TouchableOpacity>
             </View>
 
-            {tierlists.length === 0 ? (
-                <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyText}>You haven't created any tierlists yet.</Text>
-                    <Text style={styles.emptySubtext}>Create your first tierlist to get started!</Text>
-                    <TouchableOpacity style={styles.emptyCreateButton} onPress={handleCreateTierlist}>
-                        <Text style={styles.emptyCreateButtonText}>Create Tierlist</Text>
-                    </TouchableOpacity>
-                </View>
-            ) : (
-                <FlatList
-                    data={tierlists}
-                    keyExtractor={(item) => item.id.toString()}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={[
-                                styles.tierlistCard,
-                                item.id === activeTierlistId && styles.activeTierlistCard
-                            ]}
-                            onPress={() => handleViewTierlist(item.id)}
-                        >
-                            <View style={styles.tierlistHeader}>
-                                <Text style={styles.tierlistName}>
-                                    {item.name}
-                                    {item.id === activeTierlistId &&
-                                        <Text style={styles.activeIndicator}> (Active)</Text>
-                                    }
-                                </Text>
-                                <View style={styles.badgeContainer}>
-                                    {item.isPublic && (
-                                        <View style={styles.publicBadge}>
-                                            <Text style={styles.publicText}>Public</Text>
-                                        </View>
-                                    )}
-                                </View>
-                            </View>
-                            {item.description && (
-                                <Text style={styles.tierlistDescription}>{item.description}</Text>
-                            )}
-                            <View style={styles.tierPreview}>
-                                {Object.entries(TIER_COLORS).slice(0, 5).map(([tier, color]) => (
-                                    <View key={tier} style={[styles.tierDot, { backgroundColor: color }]}>
-                                        <Text style={styles.tierDotText}>{tier}</Text>
-                                    </View>
-                                ))}
-                            </View>
+            <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
+                {/* Show Active Tierlist Section */}
+                {activeTierlist && activeTierlistId && jwtToken && (
+                    <View style={styles.activeTierlistSection}>
+                        <View style={styles.activeTierlistHeader}>
+                            <Text style={styles.activeTierlistTitle}>Active Tierlist: {activeTierlist.name}</Text>
+                            <TouchableOpacity
+                                style={styles.viewActiveButton}
+                                onPress={() => handleViewTierlist(activeTierlistId)}
+                            >
+                                <Text style={styles.viewActiveButtonText}>View Full</Text>
+                            </TouchableOpacity>
+                        </View>
 
-                            <View style={styles.cardButtonsContainer}>
+                        <View style={styles.compactViewContainer}>
+                            <CompactTierlistView
+                                tierlistId={activeTierlistId}
+                                jwtToken={jwtToken}
+                            />
+                        </View>
+                    </View>
+                )}
+
+                <View style={styles.listContainer}>
+                    <Text style={styles.subTitle}>All Your Tierlists</Text>
+
+                    {/* Filter out the active tierlist from the list */}
+                    {(activeTierlistId ? tierlists.filter(t => t.id !== activeTierlistId) : tierlists).length === 0 ? (
+                        <View style={styles.emptyContainer}>
+                            <Text style={styles.emptyText}>You haven't created any tierlists yet.</Text>
+                            <Text style={styles.emptySubtext}>Create your first tierlist to get started!</Text>
+                            <TouchableOpacity style={styles.emptyCreateButton} onPress={handleCreateTierlist}>
+                                <Text style={styles.emptyCreateButtonText}>Create Tierlist</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        // Using a regular map instead of FlatList for better ScrollView compatibility
+                        <View>
+                            {(activeTierlistId ? tierlists.filter(t => t.id !== activeTierlistId) : tierlists).map(item => (
                                 <TouchableOpacity
+                                    key={item.id}
                                     style={[
-                                        styles.setActiveButton,
-                                        item.id === activeTierlistId && styles.activeButton
+                                        styles.tierlistCard,
+                                        item.id === activeTierlistId && styles.activeTierlistCard
                                     ]}
-                                    onPress={() => handleSetActiveTierlist(item.id)}
-                                    disabled={item.id === activeTierlistId}
+                                    onPress={() => handleViewTierlist(item.id)}
                                 >
-                                    <Text style={styles.setActiveButtonText}>
-                                        {item.id === activeTierlistId ? 'Active Tierlist' : 'Set as Active'}
-                                    </Text>
+                                    <View style={styles.tierlistHeader}>
+                                        <Text style={styles.tierlistName}>
+                                            {item.name}
+                                            {item.id === activeTierlistId &&
+                                                <Text style={styles.activeIndicator}> (Active)</Text>
+                                            }
+                                        </Text>
+                                        <View style={styles.badgeContainer}>
+                                            {item.isPublic && (
+                                                <View style={styles.publicBadge}>
+                                                    <Text style={styles.publicText}>Public</Text>
+                                                </View>
+                                            )}
+                                        </View>
+                                    </View>
+                                    {item.description && (
+                                        <Text style={styles.tierlistDescription}>{item.description}</Text>
+                                    )}
+                                    <View style={styles.tierPreview}>
+                                        {Object.entries(TIER_COLORS).slice(0, 5).map(([tier, color]) => (
+                                            <View key={tier} style={[styles.tierDot, {backgroundColor: color}]}>
+                                                <Text style={styles.tierDotText}>{tier}</Text>
+                                            </View>
+                                        ))}
+                                    </View>
+
+                                    <View style={styles.cardButtonsContainer}>
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.setActiveButton,
+                                                item.id === activeTierlistId && styles.activeButton
+                                            ]}
+                                            onPress={() => handleSetActiveTierlist(item.id)}
+                                            disabled={item.id === activeTierlistId}
+                                        >
+                                            <Text style={styles.setActiveButtonText}>
+                                                {item.id === activeTierlistId ? 'Active Tierlist' : 'Set as Active'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
                                 </TouchableOpacity>
-                            </View>
-                        </TouchableOpacity>
+                            ))}
+                        </View>
                     )}
-                    contentContainerStyle={styles.listContent}
-                />
-            )}
+                </View>
+            </ScrollView>
         </LinearGradient>
     );
 };
@@ -260,6 +311,12 @@ const TierlistsScreen: React.FC = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+    },
+    scrollContainer: {
+        flex: 1,
+    },
+    scrollContent: {
+        paddingBottom: 24, // Add padding at the bottom for better scrolling
     },
     loadingContainer: {
         flex: 1,
@@ -283,6 +340,13 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: 'white',
     },
+    subTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: 'white',
+        marginBottom: 12,
+        marginHorizontal: 16,
+    },
     createButton: {
         backgroundColor: '#4da6ff',
         paddingVertical: 8,
@@ -293,8 +357,48 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: 'bold',
     },
+    activeTierlistSection: {
+        backgroundColor: 'rgba(77, 166, 255, 0.1)',
+        marginHorizontal: 16,
+        marginBottom: 16,
+        borderRadius: 10,
+        borderColor: '#4da6ff',
+        borderWidth: 2,
+        padding: 12,
+    },
+    activeTierlistHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    activeTierlistTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: 'white',
+    },
+    viewActiveButton: {
+        backgroundColor: '#4da6ff',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 6,
+    },
+    viewActiveButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 12,
+    },
+    compactViewContainer: {
+        height: 350,
+        borderRadius: 8,
+        overflow: 'hidden',
+    },
+    listContainer: {
+        flex: 1,
+    },
     listContent: {
         padding: 16,
+        paddingTop: 0,
     },
     tierlistCard: {
         backgroundColor: 'rgba(255, 255, 255, 0.1)',
