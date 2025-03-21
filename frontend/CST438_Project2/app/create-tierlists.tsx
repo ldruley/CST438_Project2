@@ -152,7 +152,7 @@ const CreateTierlistContent: React.FC = () => {
 
             <ScrollView style={styles.scrollView}>
                 <View style={styles.formSection}>
-                    <Text style={styles.sectionTitle}>Basic Information</Text>
+                    <Text style={styles.sectionTitle}>New Tier</Text>
 
                     <Text style={styles.label}>Tierlist Name</Text>
                     <TextInput
@@ -186,9 +186,8 @@ const CreateTierlistContent: React.FC = () => {
                 </View>
 
                 <View style={styles.formSection}>
-                    <Text style={styles.sectionTitle}>Tiers Information</Text>
+                    <Text style={styles.sectionTitle}>Info</Text>
                     <Text style={styles.tierInfo}>
-                        Your tierlist will include the standard tiers: S, A, B, C, D, E, and F.
                         After creating the tierlist, you'll be able to add items to each tier.
                     </Text>
 
@@ -243,6 +242,9 @@ const styles = StyleSheet.create({
     scrollView: {
         flex: 1,
         padding: 16,
+        maxWidth: 800,
+        alignSelf: 'center',
+        width: '100%',
     },
     formSection: {
         backgroundColor: 'rgba(255, 255, 255, 0.1)',

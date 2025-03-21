@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
         fontSize: 12,
     },
     compactViewContainer: {
-        height: 350,
+        height: 375,
         borderRadius: 8,
         overflow: 'hidden',
     },

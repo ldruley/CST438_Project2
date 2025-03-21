@@ -200,18 +200,6 @@ const TierlistView: React.FC = () => {
         }
     };
 
-    const handleTierNameChange = async (tierId: number, name: string) => {
-        // In a real app, you would implement this to update the tier name in the backend
-        console.log(`Updating tier ${tierId} name to ${name}`);
-
-        // Update the local state for immediate feedback
-        setTiers(prevTiers =>
-            prevTiers.map(tier =>
-                tier.id === tierId ? { ...tier, name } : tier
-            )
-        );
-    };
-
     if (isLoading) {
         return (
             <LinearGradient colors={['#000000', '#808080']} style={styles.loadingContainer}>
@@ -264,7 +252,6 @@ const TierlistView: React.FC = () => {
                     onItemMove={handleItemMove}
                     onItemDelete={handleItemDelete}
                     onItemAdd={handleItemAdd}
-                    onTierNameChange={handleTierNameChange}
                 />
             </View>
         </LinearGradient>

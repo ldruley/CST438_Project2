@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignSelf: 'center',
         width: '100%',
-        maxWidth: 500, // Restrict maximum width
+        maxWidth: 800, // Restrict maximum width
         padding: 16,
     },
     formSection: {
