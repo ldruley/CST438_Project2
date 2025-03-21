@@ -72,6 +72,8 @@ const Login: React.FC = () => {
       // Also store username for displaying in the app
       await AsyncStorage.setItem('username', username);
 
+      await AsyncStorage.setItem('userId', data.userId);
+
       setUsername('');
       setPassword('');
       setError('');

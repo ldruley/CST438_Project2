@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import TierList from '@/components/TierList';
-import { Item, Tier, Tierlist } from '@/types/tierlist';
+import { Item, Tier, Tierlist, TIER_RANKS, TIER_COLORS } from '@/types/tierlist';
 
 const TierlistView: React.FC = () => {
     const params = useLocalSearchParams();
@@ -12,7 +12,15 @@ const TierlistView: React.FC = () => {
     const router = useRouter();
 
     const [tierlist, setTierlist] = useState<Tierlist | null>(null);
-    const [tiers, setTiers] = useState<Tier[]>([]);
+    const [tiers, setTiers] = useState<Tier[]>([
+        { id: 1, name: "S", color: TIER_COLORS["S"] },
+        { id: 2, name: "A", color: TIER_COLORS["A"] },
+        { id: 3, name: "B", color: TIER_COLORS["B"] },
+        { id: 4, name: "C", color: TIER_COLORS["C"] },
+        { id: 5, name: "D", color: TIER_COLORS["D"] },
+        { id: 6, name: "E", color: TIER_COLORS["E"] },
+        { id: 7, name: "F", color: TIER_COLORS["F"] },
+    ]);
     const [items, setItems] = useState<Record<number, Item[]>>({});
     const [isEditable, setIsEditable] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -65,13 +73,13 @@ const TierlistView: React.FC = () => {
 
                 // Create standard tiers with IDs 1-7 mapping to S-F
                 const tiersList: Tier[] = [
-                    { id: 1, name: "S", color: "#FF5252" },
-                    { id: 2, name: "A", color: "#FF9800" },
-                    { id: 3, name: "B", color: "#FFEB3B" },
-                    { id: 4, name: "C", color: "#8BC34A" },
-                    { id: 5, name: "D", color: "#03A9F4" },
-                    { id: 6, name: "E", color: "#673AB7" },
-                    { id: 7, name: "F", color: "#9C27B0" },
+                    { id: 1, name: "S", color: TIER_COLORS["S"] },
+                    { id: 2, name: "A", color: TIER_COLORS["A"] },
+                    { id: 3, name: "B", color: TIER_COLORS["B"] },
+                    { id: 4, name: "C", color: TIER_COLORS["C"] },
+                    { id: 5, name: "D", color: TIER_COLORS["D"] },
+                    { id: 6, name: "E", color: TIER_COLORS["E"] },
+                    { id: 7, name: "F", color: TIER_COLORS["F"] },
                 ];
                 setTiers(tiersList);
 
@@ -101,13 +109,16 @@ const TierlistView: React.FC = () => {
             }
 
             const data: Item[] = await response.json();
+
+            // Group items by tier/rank (1-7 for S-F)
             const groupedItems: Record<number, Item[]> = {
-                1: data.filter(item => item.rank === 1 || item.rank <= 10),
-                2: data.filter(item => item.rank > 10 && item.rank <= 20),
-                3: data.filter(item => item.rank > 20 && item.rank <= 30),
-                4: data.filter(item => item.rank > 30 && item.rank <= 40),
-                5: data.filter(item => item.rank > 40 && item.rank <= 50),
-                6: data.filter(item => item.rank > 50),
+                1: data.filter(item => item.rank === 1),  // S tier
+                2: data.filter(item => item.rank === 2),  // A tier
+                3: data.filter(item => item.rank === 3),  // B tier
+                4: data.filter(item => item.rank === 4),  // C tier
+                5: data.filter(item => item.rank === 5),  // D tier
+                6: data.filter(item => item.rank === 6),  // E tier
+                7: data.filter(item => item.rank === 7),  // F tier
             };
 
             setItems(groupedItems);
@@ -118,7 +129,7 @@ const TierlistView: React.FC = () => {
 
     const handleItemMove = async (item: Item, direction: 'up' | 'down') => {
         try {
-            const newRank = direction === 'up' ? Math.max(1, item.rank - 1) : item.rank + 1;
+            const newRank = direction === 'up' ? Math.max(1, item.rank - 1) : Math.min(7, item.rank + 1);
 
             const response = await fetch(`http://localhost:8080/api/items/${item.id}/rank/${newRank}`, {
                 method: 'PUT',
@@ -167,6 +178,8 @@ const TierlistView: React.FC = () => {
 
     const handleItemAdd = async (tierId: number, name: string) => {
         try {
+            // The tierId in our component corresponds directly to the rank in the database
+            // S tier (id 1) = rank 1, A tier (id 2) = rank 2, etc.
             const response = await fetch(`http://localhost:8080/api/items`, {
                 method: 'POST',
                 headers: {
@@ -175,8 +188,9 @@ const TierlistView: React.FC = () => {
                 },
                 body: JSON.stringify({
                     name,
+                    rank: tierId,
                     tier: {
-                        id: tierId
+                        id: parseInt(tierlistId || '0')
                     }
                 }),
             });
@@ -256,7 +270,7 @@ const TierlistView: React.FC = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 16,
+        paddingHorizontal: 24, // Increased horizontal padding for the entire view
     },
     loadingContainer: {
         flex: 1,
@@ -273,8 +287,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 16,
-        paddingTop: 40, // Add space for status bar
+        marginBottom: 12,
+        paddingTop: 20,
     },
     title: {
         fontSize: 24,
@@ -308,6 +322,7 @@ const styles = StyleSheet.create({
     },
     tierListContainer: {
         flex: 1,
+        paddingBottom: 10,
     },
 });
 

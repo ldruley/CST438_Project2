@@ -13,7 +13,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
@@ -33,28 +32,39 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-        throws ServletException, IOException {
-            
+            throws ServletException, IOException {
+
         final String path = request.getServletPath();
-    
-         // Skip filter for auth endpoints
-        if (path.startsWith("/auth/login") || path.startsWith("/auth/register") || path.startsWith("/auth/logout") || path.startsWith("/auth/debug-complete")) {
+
+        // Add debug logging for all requests
+        logger.debug("Request path: {}, Method: {}", path, request.getMethod());
+
+        // Skip filter for auth endpoints
+        if (path.startsWith("/auth/login") || path.startsWith("/auth/register") ||
+                path.startsWith("/auth/logout") || path.startsWith("/auth/debug-complete")) {
+            logger.debug("Skipping JWT filter for auth endpoint: {}", path);
             filterChain.doFilter(request, response);
             return;
-    }
+        }
 
         try {
             String authorizationHeader = request.getHeader("Authorization");
+            logger.debug("Authorization header: {}", authorizationHeader != null ?
+                    (authorizationHeader.length() > 10 ? authorizationHeader.substring(0, 10) + "..." : authorizationHeader) : "null");
 
             if(authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                logger.debug("No Bearer token found, continuing filter chain");
                 filterChain.doFilter(request, response);
                 return;
             }
+
             String jwtToken = authorizationHeader.substring(7);
             String username = jwtTokenUtil.extractUsername(jwtToken);
+            logger.debug("Extracted username from token: {}", username);
 
             if(username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+                logger.debug("Loaded UserDetails for: {}, authorities: {}", username, userDetails.getAuthorities());
 
                 if (jwtTokenUtil.validateToken(jwtToken, userDetails)) {
                     UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
@@ -66,14 +76,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 
-                    logger.debug("Authenticated user: {}, authorities: {}",
+                    logger.debug("Successfully authenticated user: {}, authorities: {}",
                             username, userDetails.getAuthorities());
+                } else {
+                    logger.debug("Token validation failed for user: {}", username);
                 }
             }
 
-        }catch (Exception e) {
+            filterChain.doFilter(request, response);
+        } catch (Exception e) {
             logger.error("JWT Authentication error: {}", e.getMessage());
+            // Continue the filter chain even if authentication fails to avoid blocking the response
+            filterChain.doFilter(request, response);
         }
     }
-
 }
