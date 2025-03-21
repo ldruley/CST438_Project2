@@ -1,161 +1,186 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
-import { Item, Tier } from '@/types/tierlist';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {TIER_COLORS, Tierlist} from '@/types/tierlist';
 
-interface TierListProps {
-    tiers: Tier[];
-    items?: Record<number, Item[]>;
-    isEditable?: boolean;
-    onItemMove?: (item: Item, direction: 'up' | 'down') => void;
-    onItemDelete?: (item: Item) => void;
-    onItemAdd?: (tierId: number, name: string) => void;
-    onTierNameChange?: (tierId: number, name: string) => void;
-}
+const TierlistsScreen: React.FC = () => {
+    const router = useRouter();
+    const [isLoading, setIsLoading] = useState(true);
+    const [tierlists, setTierlists] = useState<Tierlist[]>([]);
+    const [jwtToken, setJwtToken] = useState<string | null>(null);
+    const [userId, setUserId] = useState<number | null>(null);
 
-// Individual item component
-const TierItem: React.FC<{
-    item: Item;
-    isEditable: boolean;
-    onMove: (item: Item, direction: 'up' | 'down') => void;
-    onDelete: (item: Item) => void;
-}> = ({ item, isEditable, onMove, onDelete }) => (
-    <View style={styles.item}>
-        <Text style={styles.itemText}>{item.name}</Text>
-        {isEditable && (
-            <View style={styles.itemActions}>
-                <TouchableOpacity onPress={() => onMove(item, 'up')} style={styles.actionButton}>
-                    <Text style={styles.actionButtonText}>↑</Text>
+    // Fetch user data and JWT token on component mount
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                console.log('Fetching user data from AsyncStorage...');
+                const token = await AsyncStorage.getItem('jwtToken');
+                const storedUserId = await AsyncStorage.getItem('userId');
+
+                console.log(`Token exists: ${!!token}, User ID exists: ${!!storedUserId}`);
+
+                if (token) {
+                    setJwtToken(token);
+                    if (storedUserId) {
+                        setUserId(parseInt(storedUserId));
+                    } else {
+                        console.log('No user ID found in storage');
+                        setUserId(null);
+                    }
+                } else {
+                    console.log('No JWT token found, redirecting to login');
+                    setJwtToken(null);
+                    setUserId(null);
+                    // If no token, redirect to login
+                    router.replace('/login');
+                }
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+                setJwtToken(null);
+                setUserId(null);
+                setIsLoading(false);
+            }
+        };
+
+        fetchUserData();
+    }, []);
+
+    // Fetch tierlists when token is available
+    useEffect(() => {
+        if (jwtToken && userId) {
+            fetchTierlists();
+        } else if (jwtToken === null && userId === null) {
+            // Still loading user data
+        } else {
+            // We have attempted to load token/userId but they don't exist
+            setIsLoading(false);
+        }
+    }, [jwtToken, userId]);
+
+    const fetchTierlists = async () => {
+        setIsLoading(true);
+        try {
+            console.log(`Fetching tierlists for user ID: ${userId} with token: ${jwtToken?.substring(0, 10)}...`);
+
+            // Fetch user's tierlists
+            const response = await fetch(`http://localhost:8080/api/tiers/user/${userId}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${jwtToken}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                mode: 'cors',
+            });
+
+            const responseText = await response.text();
+            console.log(`Response status: ${response.status}`);
+            console.log(`Response body: ${responseText.substring(0, 100)}...`);
+
+            if (response.ok) {
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                    console.log(`Parsed ${data.length} tierlists`);
+                    setTierlists(data);
+                } catch (parseError) {
+                    console.error('Error parsing response as JSON:', parseError);
+                    setTierlists([]);
+                }
+            } else {
+                console.error('Failed to fetch tierlists:', response.status, response.statusText);
+                setTierlists([]);
+            }
+        } catch (error) {
+            console.error('Error fetching tierlists:', error);
+            setTierlists([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleCreateTierlist = () => {
+        router.push('/create-tierlists');
+    };
+
+    const handleViewTierlist = (id: number) => {
+        router.push({
+            pathname: '/tierlist/[id]',
+            params: { id: id.toString() }
+        });
+    };
+
+    if (isLoading) {
+        return (
+            <LinearGradient colors={['#000000', '#808080']} style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#FFFFFF" />
+                <Text style={styles.loadingText}>Loading your tierlists...</Text>
+                <TouchableOpacity
+                    style={styles.debugButton}
+                    onPress={() => {
+                        console.log('Debug button pressed, forcing state update');
+                        setIsLoading(false);
+                    }}
+                >
+                    <Text style={styles.debugButtonText}>Debug: Skip Loading</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => onMove(item, 'down')} style={styles.actionButton}>
-                    <Text style={styles.actionButtonText}>↓</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => onDelete(item)} style={styles.deleteButton}>
-                    <Text style={styles.actionButtonText}>×</Text>
+            </LinearGradient>
+        );
+    }
+
+    return (
+        <LinearGradient colors={['#000000', '#808080']} style={styles.container}>
+            <View style={styles.header}>
+                <Text style={styles.title}>Your Tierlists</Text>
+                <TouchableOpacity style={styles.createButton} onPress={handleCreateTierlist}>
+                    <Text style={styles.createButtonText}>+ Create New</Text>
                 </TouchableOpacity>
             </View>
-        )}
-    </View>
-);
 
-// Add item input component
-const AddItemInput: React.FC<{
-    tierId: number;
-    onAdd: (tierId: number, name: string) => void;
-}> = ({ tierId, onAdd }) => {
-    const [newItemName, setNewItemName] = useState('');
-
-    const handleAddItem = () => {
-        if (newItemName.trim()) {
-            onAdd(tierId, newItemName);
-            setNewItemName('');
-        }
-    };
-
-    return (
-        <View style={styles.addItemContainer}>
-            <TextInput
-                style={styles.addItemInput}
-                placeholder="New item"
-                value={newItemName}
-                onChangeText={setNewItemName}
-                placeholderTextColor="#999"
-            />
-            <TouchableOpacity style={styles.addItemButton} onPress={handleAddItem}>
-                <Text style={styles.addItemButtonText}>+</Text>
-            </TouchableOpacity>
-        </View>
-    );
-};
-
-// Tier row component
-const TierRow: React.FC<{
-    tier: Tier;
-    tierItems?: Item[];
-    isEditable: boolean;
-    onItemMove?: (item: Item, direction: 'up' | 'down') => void;
-    onItemDelete?: (item: Item) => void;
-    onItemAdd?: (tierId: number, name: string) => void;
-    onTierNameChange?: (tierId: number, name: string) => void;
-}> = ({
-          tier,
-          tierItems = [],
-          isEditable,
-          onItemMove,
-          onItemDelete,
-          onItemAdd,
-          onTierNameChange,
-      }) => {
-    const handleItemMove = (item: Item, direction: 'up' | 'down') => {
-        if (onItemMove) {
-            onItemMove(item, direction);
-        }
-    };
-
-    const handleItemDelete = (item: Item) => {
-        if (onItemDelete) {
-            onItemDelete(item);
-        }
-    };
-
-    return (
-        <View style={[styles.tierRow, { backgroundColor: tier.color || '#333333' }]}>
-            <View style={styles.tierLabel}>
-                {isEditable && onTierNameChange ? (
-                    <TextInput
-                        style={styles.tierNameInput}
-                        value={tier.name}
-                        onChangeText={(text) => onTierNameChange(tier.id, text)}
-                        maxLength={5}
-                    />
-                ) : (
-                    <Text style={styles.tierName}>{tier.name}</Text>
-                )}
-            </View>
-
-            <ScrollView horizontal style={styles.itemsContainer}>
-                {tierItems.map((item) => (
-                    <TierItem
-                        key={item.id}
-                        item={item}
-                        isEditable={isEditable}
-                        onMove={handleItemMove}
-                        onDelete={handleItemDelete}
-                    />
-                ))}
-
-                {isEditable && onItemAdd && (
-                    <AddItemInput tierId={tier.id} onAdd={onItemAdd} />
-                )}
-            </ScrollView>
-        </View>
-    );
-};
-
-// Main TierList component
-const TierList: React.FC<TierListProps> = ({
-                                               tiers,
-                                               items = {},
-                                               isEditable = false,
-                                               onItemMove,
-                                               onItemDelete,
-                                               onItemAdd,
-                                               onTierNameChange,
-                                           }) => {
-    return (
-        <ScrollView style={styles.container}>
-            {tiers.map((tier) => (
-                <TierRow
-                    key={tier.id}
-                    tier={tier}
-                    tierItems={items[tier.id] || []}
-                    isEditable={isEditable}
-                    onItemMove={onItemMove}
-                    onItemDelete={onItemDelete}
-                    onItemAdd={onItemAdd}
-                    onTierNameChange={onTierNameChange}
+            {tierlists.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>You haven't created any tierlists yet.</Text>
+                    <Text style={styles.emptySubtext}>Create your first tierlist to get started!</Text>
+                    <TouchableOpacity style={styles.emptyCreateButton} onPress={handleCreateTierlist}>
+                        <Text style={styles.emptyCreateButtonText}>Create Tierlist</Text>
+                    </TouchableOpacity>
+                </View>
+            ) : (
+                <FlatList
+                    data={tierlists}
+                    keyExtractor={(item) => item.id.toString()}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            style={styles.tierlistCard}
+                            onPress={() => handleViewTierlist(item.id)}
+                        >
+                            <View style={styles.tierlistHeader}>
+                                <Text style={styles.tierlistName}>{item.name}</Text>
+                                {item.isPublic && (
+                                    <View style={styles.publicBadge}>
+                                        <Text style={styles.publicText}>Public</Text>
+                                    </View>
+                                )}
+                            </View>
+                            {item.description && (
+                                <Text style={styles.tierlistDescription}>{item.description}</Text>
+                            )}
+                            <View style={styles.tierPreview}>
+                                {Object.entries(TIER_COLORS).slice(0, 5).map(([tier, color]) => (
+                                    <View key={tier} style={[styles.tierDot, { backgroundColor: color }]}>
+                                        <Text style={styles.tierDotText}>{tier}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        </TouchableOpacity>
+                    )}
+                    contentContainerStyle={styles.listContent}
                 />
-            ))}
-        </ScrollView>
+            )}
+        </LinearGradient>
     );
 };
 
@@ -163,107 +188,131 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    tierRow: {
-        flexDirection: 'row',
-        marginBottom: 10,
-        borderRadius: 8,
-        overflow: 'hidden',
-    },
-    tierLabel: {
-        width: 60,
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 10,
-        borderRightWidth: 1,
-        borderRightColor: 'rgba(255, 255, 255, 0.3)',
-    },
-    tierName: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 18,
-        textAlign: 'center',
-    },
-    tierNameInput: {
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        borderRadius: 4,
-        padding: 4,
-        width: 40,
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 18,
-        textAlign: 'center',
-    },
-    itemsContainer: {
+    loadingContainer: {
         flex: 1,
-        padding: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    item: {
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        padding: 10,
+    loadingText: {
+        color: 'white',
+        fontSize: 18,
+        marginTop: 16,
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 16,
+        paddingTop: 60,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: 'white',
+    },
+    createButton: {
+        backgroundColor: '#4da6ff',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
         borderRadius: 8,
-        marginRight: 10,
-        minWidth: 100,
-        maxWidth: 150,
     },
-    itemText: {
-        color: '#333',
-        textAlign: 'center',
+    createButtonText: {
+        color: 'white',
         fontWeight: 'bold',
     },
-    itemActions: {
+    listContent: {
+        padding: 16,
+    },
+    tierlistCard: {
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        borderRadius: 10,
+        padding: 16,
+        marginBottom: 16,
+    },
+    tierlistHeader: {
         flexDirection: 'row',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    tierlistName: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: 'white',
+    },
+    publicBadge: {
+        backgroundColor: '#32CD32',
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        borderRadius: 4,
+    },
+    publicText: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    tierlistDescription: {
+        color: '#e0e0e0',
+        marginBottom: 12,
+    },
+    tierPreview: {
+        flexDirection: 'row',
         marginTop: 8,
     },
-    actionButton: {
-        backgroundColor: '#4da6ff',
+    tierDot: {
         width: 30,
         height: 30,
         borderRadius: 15,
         alignItems: 'center',
         justifyContent: 'center',
-        marginHorizontal: 2,
+        marginRight: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.5)',
     },
-    deleteButton: {
-        backgroundColor: '#ff6b6b',
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginHorizontal: 2,
-    },
-    actionButtonText: {
+    tierDotText: {
         color: 'white',
+        fontWeight: 'bold',
+        fontSize: 12,
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 32,
+    },
+    emptyText: {
         fontSize: 18,
         fontWeight: 'bold',
-    },
-    addItemContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        borderRadius: 8,
-        padding: 5,
-        minWidth: 150,
-    },
-    addItemInput: {
-        flex: 1,
-        padding: 5,
-        color: '#333',
-    },
-    addItemButton: {
-        backgroundColor: '#32CD32',
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    addItemButtonText: {
         color: 'white',
-        fontSize: 20,
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    emptySubtext: {
+        fontSize: 16,
+        color: '#e0e0e0',
+        marginBottom: 24,
+        textAlign: 'center',
+    },
+    emptyCreateButton: {
+        backgroundColor: '#4da6ff',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 8,
+    },
+    emptyCreateButtonText: {
+        color: 'white',
         fontWeight: 'bold',
+        fontSize: 16,
+    },
+    debugButton: {
+        marginTop: 20,
+        backgroundColor: 'rgba(255, 0, 0, 0.3)',
+        padding: 10,
+        borderRadius: 5,
+    },
+    debugButtonText: {
+        color: 'white',
     },
 });
 
-export default TierList;
+export default TierlistsScreen;
