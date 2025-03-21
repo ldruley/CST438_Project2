@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -11,6 +11,7 @@ const TierlistsScreen: React.FC = () => {
     const [tierlists, setTierlists] = useState<Tierlist[]>([]);
     const [jwtToken, setJwtToken] = useState<string | null>(null);
     const [userId, setUserId] = useState<number | null>(null);
+    const [activeTierlistId, setActiveTierlistId] = useState<number | null>(null);
 
     // Fetch user data and JWT token on component mount
     useEffect(() => {
@@ -52,6 +53,7 @@ const TierlistsScreen: React.FC = () => {
     useEffect(() => {
         if (jwtToken && userId) {
             fetchTierlists();
+            fetchActiveTierlist();
         } else if (jwtToken === null && userId === null) {
             // Still loading user data
         } else {
@@ -99,6 +101,52 @@ const TierlistsScreen: React.FC = () => {
             setTierlists([]);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const fetchActiveTierlist = async () => {
+        try {
+            const response = await fetch(`http://localhost:8080/api/users/${userId}/activetier`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${jwtToken}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.activeTierlistId) {
+                    setActiveTierlistId(data.activeTierlistId);
+                    console.log(`Active tierlist ID: ${data.activeTierlistId}`);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching active tierlist:', error);
+        }
+    };
+
+    const handleSetActiveTierlist = async (tierlistId: number) => {
+        try {
+            console.log(`Setting tierlist ${tierlistId} as active for user ${userId}`);
+
+            const response = await fetch(`http://localhost:8080/api/users/${userId}/activetier/${tierlistId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${jwtToken}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.ok) {
+                setActiveTierlistId(tierlistId);
+                Alert.alert("Success", "Active tierlist updated successfully!");
+            } else {
+                Alert.alert("Error", "Failed to update active tierlist");
+            }
+        } catch (error) {
+            console.error('Error setting active tierlist:', error);
+            Alert.alert("Error", "An error occurred while updating active tierlist");
         }
     };
 
@@ -154,16 +202,26 @@ const TierlistsScreen: React.FC = () => {
                     keyExtractor={(item) => item.id.toString()}
                     renderItem={({ item }) => (
                         <TouchableOpacity
-                            style={styles.tierlistCard}
+                            style={[
+                                styles.tierlistCard,
+                                item.id === activeTierlistId && styles.activeTierlistCard
+                            ]}
                             onPress={() => handleViewTierlist(item.id)}
                         >
                             <View style={styles.tierlistHeader}>
-                                <Text style={styles.tierlistName}>{item.name}</Text>
-                                {item.isPublic && (
-                                    <View style={styles.publicBadge}>
-                                        <Text style={styles.publicText}>Public</Text>
-                                    </View>
-                                )}
+                                <Text style={styles.tierlistName}>
+                                    {item.name}
+                                    {item.id === activeTierlistId &&
+                                        <Text style={styles.activeIndicator}> (Active)</Text>
+                                    }
+                                </Text>
+                                <View style={styles.badgeContainer}>
+                                    {item.isPublic && (
+                                        <View style={styles.publicBadge}>
+                                            <Text style={styles.publicText}>Public</Text>
+                                        </View>
+                                    )}
+                                </View>
                             </View>
                             {item.description && (
                                 <Text style={styles.tierlistDescription}>{item.description}</Text>
@@ -174,6 +232,21 @@ const TierlistsScreen: React.FC = () => {
                                         <Text style={styles.tierDotText}>{tier}</Text>
                                     </View>
                                 ))}
+                            </View>
+
+                            <View style={styles.cardButtonsContainer}>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.setActiveButton,
+                                        item.id === activeTierlistId && styles.activeButton
+                                    ]}
+                                    onPress={() => handleSetActiveTierlist(item.id)}
+                                    disabled={item.id === activeTierlistId}
+                                >
+                                    <Text style={styles.setActiveButtonText}>
+                                        {item.id === activeTierlistId ? 'Active Tierlist' : 'Set as Active'}
+                                    </Text>
+                                </TouchableOpacity>
                             </View>
                         </TouchableOpacity>
                     )}
@@ -229,6 +302,11 @@ const styles = StyleSheet.create({
         padding: 16,
         marginBottom: 16,
     },
+    activeTierlistCard: {
+        borderColor: '#4da6ff',
+        borderWidth: 2,
+        backgroundColor: 'rgba(77, 166, 255, 0.1)',
+    },
     tierlistHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -240,11 +318,19 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: 'white',
     },
+    activeIndicator: {
+        color: '#4da6ff',
+        fontStyle: 'italic',
+    },
+    badgeContainer: {
+        flexDirection: 'row',
+    },
     publicBadge: {
         backgroundColor: '#32CD32',
         paddingVertical: 4,
         paddingHorizontal: 8,
         borderRadius: 4,
+        marginLeft: 8,
     },
     publicText: {
         color: 'white',
@@ -273,6 +359,25 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: 'bold',
         fontSize: 12,
+    },
+    cardButtonsContainer: {
+        marginTop: 12,
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+    },
+    setActiveButton: {
+        backgroundColor: '#555555',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 4,
+    },
+    activeButton: {
+        backgroundColor: '#4da6ff',
+    },
+    setActiveButtonText: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: 'bold',
     },
     emptyContainer: {
         flex: 1,

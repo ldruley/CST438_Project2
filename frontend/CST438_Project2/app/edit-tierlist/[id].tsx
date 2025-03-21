@@ -3,8 +3,7 @@ import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Alert,
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import ColorPicker from 'react-native-wheel-color-picker';
-import { Tier, Tierlist } from '@/types/tierlist';
+import { Tierlist } from '@/types/tierlist';
 
 export default function EditTierlistScreen() {
     return (
@@ -19,54 +18,6 @@ export default function EditTierlistScreen() {
     );
 }
 
-// TierInput Component
-interface TierInputProps {
-    tier: Tier;
-    index: number;
-    updateTier: (index: number, tier: Tier) => void;
-    removeTier: (index: number) => void;
-}
-
-const TierInput: React.FC<TierInputProps> = ({ tier, index, updateTier, removeTier }) => {
-    return (
-        <View style={styles.tierInputContainer}>
-            <View style={styles.tierHeader}>
-                <Text style={styles.tierLabel}>Tier {index + 1}</Text>
-                <TouchableOpacity
-                    style={styles.removeTierButton}
-                    onPress={() => removeTier(index)}
-                >
-                    <Text style={styles.removeTierButtonText}>X</Text>
-                </TouchableOpacity>
-            </View>
-
-            <View style={styles.tierInputs}>
-                <TextInput
-                    style={styles.tierNameInput}
-                    placeholder="Tier name (e.g., S, A, B)"
-                    value={tier.name}
-                    onChangeText={(text) => updateTier(index, { ...tier, name: text })}
-                    placeholderTextColor="#999"
-                />
-
-                <View style={[styles.colorPreview, { backgroundColor: tier.color }]} />
-            </View>
-
-            <Text style={styles.colorLabel}>Tier Color:</Text>
-            <View style={styles.colorPickerContainer}>
-                <ColorPicker
-                    color={tier.color}
-                    onColorChange={(color) => updateTier(index, { ...tier, color })}
-                    thumbSize={30}
-                    sliderSize={20}
-                    noSnap={true}
-                    row={false}
-                />
-            </View>
-        </View>
-    );
-};
-
 const EditTierlistContent: React.FC = () => {
     const params = useLocalSearchParams();
     const tierlistId = params.id?.toString();
@@ -75,9 +26,11 @@ const EditTierlistContent: React.FC = () => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [isPublic, setIsPublic] = useState(false);
-    const [tiers, setTiers] = useState<Tier[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isSettingActive, setIsSettingActive] = useState(false);
+    const [isActiveTierlist, setIsActiveTierlist] = useState(false);
     const [userId, setUserId] = useState<number | null>(null);
     const [jwtToken, setJwtToken] = useState('');
 
@@ -89,7 +42,7 @@ const EditTierlistContent: React.FC = () => {
                 const token = await AsyncStorage.getItem('jwtToken');
 
                 if (storedUserId && token) {
-                    setUserId(parseInt(storedUserId, 10));
+                    setUserId(parseInt(storedUserId));
                     setJwtToken(token);
                 } else {
                     // If no user ID or token, redirect to login
@@ -105,11 +58,12 @@ const EditTierlistContent: React.FC = () => {
 
     // Fetch tierlist data when component mounts or tierlistId changes
     useEffect(() => {
-        if (!tierlistId || !jwtToken) return;
+        if (!tierlistId || !jwtToken || !userId) return;
 
         const fetchTierlist = async () => {
             setIsLoading(true);
             try {
+                // Fetch tierlist data
                 const response = await fetch(`http://localhost:8080/api/tiers/${tierlistId}`, {
                     headers: {
                         'Authorization': `Bearer ${jwtToken}`,
@@ -133,18 +87,19 @@ const EditTierlistContent: React.FC = () => {
                 setDescription(data.description || '');
                 setIsPublic(data.isPublic || false);
 
-                // Fetch or create tiers
-                // In a real app, you would fetch the actual tiers from your backend
-                // For this example, we'll create some placeholder tiers
-                const tiersList: Tier[] = [
-                    { id: 1, name: "S", color: "#FF5252" },
-                    { id: 2, name: "A", color: "#FF9800" },
-                    { id: 3, name: "B", color: "#FFEB3B" },
-                    { id: 4, name: "C", color: "#8BC34A" },
-                    { id: 5, name: "D", color: "#03A9F4" },
-                    { id: 6, name: "F", color: "#9C27B0" },
-                ];
-                setTiers(tiersList);
+                // Check if this is the active tierlist
+                const activeResponse = await fetch(`http://localhost:8080/api/users/${userId}/activetier`, {
+                    headers: {
+                        'Authorization': `Bearer ${jwtToken}`,
+                    },
+                });
+
+                if (activeResponse.ok) {
+                    const activeData = await activeResponse.json();
+                    if (activeData.activeTierlistId && activeData.activeTierlistId.toString() === tierlistId) {
+                        setIsActiveTierlist(true);
+                    }
+                }
             } catch (error) {
                 console.error('Error fetching tierlist:', error);
                 Alert.alert('Error', 'Failed to load tierlist');
@@ -157,36 +112,39 @@ const EditTierlistContent: React.FC = () => {
         fetchTierlist();
     }, [tierlistId, jwtToken, userId]);
 
-    const updateTier = (index: number, updatedTier: Tier) => {
-        const updatedTiers = [...tiers];
-        updatedTiers[index] = updatedTier;
-        setTiers(updatedTiers);
-    };
-
-    const addTier = () => {
-        const nextId = Math.max(...tiers.map(t => t.id), 0) + 1;
-        setTiers([...tiers, { id: nextId, name: `Tier ${tiers.length + 1}`, color: '#808080' }]);
-    };
-
-    const removeTier = (index: number) => {
-        if (tiers.length <= 1) {
-            Alert.alert('Error', 'You need at least one tier');
+    const handleSetActiveList = async () => {
+        if (!userId || !tierlistId) {
+            Alert.alert('Error', 'Unable to set active tierlist');
             return;
         }
 
-        const updatedTiers = [...tiers];
-        updatedTiers.splice(index, 1);
-        setTiers(updatedTiers);
+        setIsSettingActive(true);
+        try {
+            const response = await fetch(`http://localhost:8080/api/users/${userId}/activetier/${tierlistId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${jwtToken}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to set active tierlist');
+            }
+
+            setIsActiveTierlist(true);
+            Alert.alert('Success', 'This tierlist is now your active tierlist');
+        } catch (error) {
+            console.error('Error setting active tierlist:', error);
+            Alert.alert('Error', 'Failed to set active tierlist');
+        } finally {
+            setIsSettingActive(false);
+        }
     };
 
     const handleSubmit = async () => {
         if (!name.trim()) {
             Alert.alert('Error', 'Please enter a tierlist name');
-            return;
-        }
-
-        if (tiers.length === 0) {
-            Alert.alert('Error', 'You need at least one tier');
             return;
         }
 
@@ -208,8 +166,7 @@ const EditTierlistContent: React.FC = () => {
                 body: JSON.stringify({
                     name,
                     description,
-                    isPublic,
-                    color: tiers[0].color, // Use first tier's color as the tierlist color
+                    isPublic
                 }),
             });
 
@@ -224,9 +181,6 @@ const EditTierlistContent: React.FC = () => {
                     'Authorization': `Bearer ${jwtToken}`,
                 },
             });
-
-            // In a real app, you would update each tier as well
-            // For simplicity, we're skipping that part here
 
             Alert.alert(
                 'Success',
@@ -247,6 +201,55 @@ const EditTierlistContent: React.FC = () => {
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleDelete = async () => {
+        Alert.alert(
+            'Delete Tierlist',
+            'Are you sure you want to delete this tierlist? This action cannot be undone.',
+            [
+                {
+                    text: 'Cancel',
+                    style: 'cancel',
+                },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setIsDeleting(true);
+                        try {
+                            const response = await fetch(`http://localhost:8080/api/tiers/${tierlistId}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'Authorization': `Bearer ${jwtToken}`,
+                                },
+                            });
+
+                            if (!response.ok) {
+                                const errorText = await response.text();
+                                throw new Error(errorText || 'Failed to delete tierlist');
+                            }
+
+                            Alert.alert(
+                                'Success',
+                                'Tierlist deleted successfully',
+                                [
+                                    {
+                                        text: 'OK',
+                                        onPress: () => router.replace('/'),
+                                    },
+                                ]
+                            );
+                        } catch (error) {
+                            console.error('Error deleting tierlist:', error);
+                            Alert.alert('Error', `Failed to delete tierlist: ${error instanceof Error ? error.message : String(error)}`);
+                        } finally {
+                            setIsDeleting(false);
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     if (isLoading) {
@@ -300,26 +303,20 @@ const EditTierlistContent: React.FC = () => {
                             trackColor={{ false: '#767577', true: '#4da6ff' }}
                             thumbColor={isPublic ? '#fff' : '#f4f3f4'}
                         />
-                    </View>
-                </View>
 
-                <View style={styles.formSection}>
-                    <View style={styles.tiersHeader}>
-                        <Text style={styles.sectionTitle}>Tiers</Text>
-                        <TouchableOpacity style={styles.addTierButton} onPress={addTier}>
-                            <Text style={styles.addTierButtonText}>+ Add Tier</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {tiers.map((tier, index) => (
-                        <TierInput
-                            key={tier.id}
-                            tier={tier}
-                            index={index}
-                            updateTier={updateTier}
-                            removeTier={removeTier}
+                        <Text style={styles.label}>Set as Active Tierlist</Text>
+                        <Switch
+                            value={isActiveTierlist}
+                            onValueChange={(value) => {
+                                if (!isActiveTierlist && !isSettingActive) {
+                                    handleSetActiveList();
+                                }
+                            }}
+                            disabled={isActiveTierlist || isSettingActive}
+                            trackColor={{ false: '#767577', true: '#32CD32' }}
+                            thumbColor={isActiveTierlist ? '#fff' : '#f4f3f4'}
                         />
-                    ))}
+                    </View>
                 </View>
 
                 <TouchableOpacity
@@ -329,6 +326,16 @@ const EditTierlistContent: React.FC = () => {
                 >
                     <Text style={styles.submitButtonText}>
                         {isSubmitting ? 'Saving...' : 'Save Changes'}
+                    </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.deleteButton, isDeleting && styles.deleteButtonDisabled]}
+                    onPress={handleDelete}
+                    disabled={isDeleting}
+                >
+                    <Text style={styles.deleteButtonText}>
+                        {isDeleting ? 'Deleting...' : 'Delete Tierlist'}
                     </Text>
                 </TouchableOpacity>
             </ScrollView>
@@ -374,6 +381,9 @@ const styles = StyleSheet.create({
     },
     scrollView: {
         flex: 1,
+        alignSelf: 'center',
+        width: '100%',
+        maxWidth: 500, // Restrict maximum width
         padding: 16,
     },
     formSection: {
@@ -410,78 +420,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 16,
     },
-    tiersHeader: {
+    activeContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 16,
-    },
-    addTierButton: {
-        backgroundColor: '#4da6ff',
-        padding: 8,
-        borderRadius: 8,
-    },
-    addTierButtonText: {
-        color: 'white',
-        fontWeight: 'bold',
-    },
-    tierInputContainer: {
-        backgroundColor: 'rgba(0, 0, 0, 0.1)',
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
         borderRadius: 8,
         padding: 16,
-        marginBottom: 16,
-    },
-    tierHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    tierLabel: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: 'white',
-    },
-    removeTierButton: {
-        backgroundColor: '#ff6b6b',
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    removeTierButtonText: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 16,
-    },
-    tierInputs: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    tierNameInput: {
-        flex: 1,
-        backgroundColor: 'white',
-        borderRadius: 8,
-        padding: 12,
-        marginRight: 16,
-        fontSize: 16,
-    },
-    colorPreview: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        borderWidth: 2,
-        borderColor: 'white',
-    },
-    colorLabel: {
-        fontSize: 16,
-        color: 'white',
-        marginBottom: 8,
-    },
-    colorPickerContainer: {
-        height: 220,
         marginBottom: 16,
     },
     submitButton: {
@@ -489,7 +434,7 @@ const styles = StyleSheet.create({
         padding: 16,
         borderRadius: 8,
         alignItems: 'center',
-        marginBottom: 32,
+        marginBottom: 16,
     },
     submitButtonDisabled: {
         backgroundColor: '#4da6ff80',
@@ -499,4 +444,19 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
     },
+    deleteButton: {
+        backgroundColor: '#ff6b6b',
+        padding: 16,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginBottom: 32,
+    },
+    deleteButtonDisabled: {
+        backgroundColor: '#ff6b6b80',
+    },
+    deleteButtonText: {
+        color: 'white',
+        fontSize: 18,
+        fontWeight: 'bold',
+    }
 });
