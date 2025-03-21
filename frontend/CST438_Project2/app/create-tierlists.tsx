@@ -62,20 +62,34 @@ const CreateTierlistContent: React.FC = () => {
     }, []);
 
     const handleSubmit = async () => {
+        console.log("Starting handleSubmit");
+
         if (!name.trim()) {
+            console.log("Missing name - showing alert");
             Alert.alert('Error', 'Please enter a tierlist name');
             return;
         }
 
         if (!userId) {
+            console.log("Missing userId - showing alert");
             Alert.alert('Error', 'User not authenticated');
             return;
         }
 
+        console.log("Setting isSubmitting to true");
         setIsSubmitting(true);
 
         try {
-            // First create the tierlist
+            console.log("Making fetch request to create tierlist");
+            console.log("UserId:", userId);
+            console.log("JWT Token length:", jwtToken.length);
+            console.log("Request body:", JSON.stringify({
+                name,
+                description,
+                isPublic,
+                userId
+            }));
+
             const tierlistResponse = await fetch(`http://localhost:8080/api/tiers/user/${userId}`, {
                 method: 'POST',
                 headers: {
@@ -85,15 +99,21 @@ const CreateTierlistContent: React.FC = () => {
                 body: JSON.stringify({
                     name,
                     description,
-                    isPublic
+                    isPublic,
+                    userId
                 }),
             });
 
-            if (!tierlistResponse.ok) {
-                throw new Error('Failed to create tierlist');
-            }
+            console.log("Response status:", tierlistResponse.status);
+            const responseText = await tierlistResponse.text();
+            console.log("Response text:", responseText);
 
-            const tierlist = await tierlistResponse.json();
+            if (!tierlistResponse.ok) {
+                throw new Error(`Failed to create tierlist: ${responseText}`);
+            }
+            console.log(responseText);
+            const tierlist = JSON.parse(responseText);
+            console.log("Tierlist created:", tierlist);
 
             Alert.alert(
                 'Success',
@@ -101,17 +121,21 @@ const CreateTierlistContent: React.FC = () => {
                 [
                     {
                         text: 'OK',
-                        onPress: () => router.replace({
-                            pathname: '/tierlist/[id]',
-                            params: { id: tierlist.id.toString() }
-                        }),
-                    },
+                        onPress: () => {
+                            console.log("Alert OK pressed, navigating to tierlist");
+                            router.replace({
+                                pathname: '/tierlist/[id]',
+                                params: { id: tierlist.id.toString() }
+                            });
+                        },
+                    }
                 ]
             );
         } catch (error) {
             console.error('Error creating tierlist:', error);
-            Alert.alert('Error', 'Failed to create tierlist');
+            //Alert.alert('Error', `Failed to create tierlist: ${error.message}`);
         } finally {
+            console.log("Setting isSubmitting to false");
             setIsSubmitting(false);
         }
     };

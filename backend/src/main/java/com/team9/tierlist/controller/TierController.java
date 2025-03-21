@@ -19,6 +19,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.team9.tierlist.model.Tier;
 import com.team9.tierlist.model.Item;
 import com.team9.tierlist.service.ItemService;
@@ -29,6 +32,8 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/tiers")
 public class TierController {
+
+    private static final Logger logger = LoggerFactory.getLogger(TierController.class);
 
     @Autowired
     private TierService tierService;
@@ -63,8 +68,12 @@ public class TierController {
 
     @PostMapping("/user/{userId}")
     public ResponseEntity<?> createTier(@PathVariable Long userId, @Valid @RequestBody Tier tier) {
+        // Add detailed logging
+        logger.info("Creating tier with name: " + tier.getName() + " for user: " + userId);
+
         // Check if a tier with this name already exists for this user
         if (tierService.existsByNameAndUserId(tier.getName(), userId)) {
+            logger.info("Tier with name '" + tier.getName() + "' already exists for user: " + userId);
             Map<String, String> error = new HashMap<>();
             error.put("error", "A tier with name '" + tier.getName() + "' already exists for this user");
             return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
@@ -72,8 +81,10 @@ public class TierController {
 
         Tier createdTier = tierService.createTier(tier, userId);
         if (createdTier != null) {
+            logger.info("Tier created successfully with ID: " + createdTier.getId());
             return new ResponseEntity<>(createdTier, HttpStatus.CREATED);
         }
+        logger.info("Failed to create tier");
         return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 

@@ -123,10 +123,14 @@ public ResponseEntity<?> debugComplete(@RequestParam String username,
             String jwtToken = jwtTokenUtil.generateToken(userDetails);
             logger.info("JWT Token generated: " + jwtToken);
 
+            // Get the user ID
+            User user = userService.getUserByUsername(username);
+            Long userId = user.getId();
 
             Map<String, Object> response = new HashMap<>();
             response.put("jwtToken", jwtToken);
             response.put("username", userDetails.getUsername());
+            response.put("userId", userId);
 
             return ResponseEntity.ok(response);
         } catch (AuthenticationException e) {
