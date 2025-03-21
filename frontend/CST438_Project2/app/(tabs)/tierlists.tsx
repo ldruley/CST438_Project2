@@ -1,0 +1,587 @@
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { TIER_COLORS, Tierlist } from '@/types/tierlist';
+import CompactTierlistView from '@/components/CompactTierlistView';
+
+const TierlistsScreen: React.FC = () => {
+    const router = useRouter();
+    const [isLoading, setIsLoading] = useState(true);
+    const [tierlists, setTierlists] = useState<Tierlist[]>([]);
+    const [jwtToken, setJwtToken] = useState<string | null>(null);
+    const [userId, setUserId] = useState<number | null>(null);
+    const [activeTierlistId, setActiveTierlistId] = useState<number | null>(null);
+    const [activeTierlist, setActiveTierlist] = useState<Tierlist | null>(null);
+
+    useFocusEffect(
+        useCallback(() => {
+            console.log('Tierlists screen focused - refreshing data');
+            setIsLoading(true);
+
+            const fetchUserData = async () => {
+                try {
+                    console.log('Fetching user data from AsyncStorage...');
+                    const token = await AsyncStorage.getItem('jwtToken');
+                    const storedUserId = await AsyncStorage.getItem('userId');
+
+                    console.log(`Token exists: ${!!token}, User ID exists: ${!!storedUserId}`);
+
+                    if (token) {
+                        setJwtToken(token);
+                        if (storedUserId) {
+                            const parsedUserId = parseInt(storedUserId);
+                            setUserId(parsedUserId);
+
+                            // Now fetch the tierlists and active tierlist
+                            await Promise.all([
+                                fetchTierlists(token, parsedUserId),
+                                fetchActiveTierlist(token, parsedUserId)
+                            ]);
+                        } else {
+                            console.log('No user ID found in storage');
+                            setUserId(null);
+                            setIsLoading(false);
+                        }
+                    } else {
+                        console.log('No JWT token found, redirecting to login');
+                        setJwtToken(null);
+                        setUserId(null);
+                        setIsLoading(false);
+                        // If no token, redirect to login
+                        router.replace('/login');
+                    }
+                } catch (error) {
+                    console.error('Error fetching user data:', error);
+                    setJwtToken(null);
+                    setUserId(null);
+                    setIsLoading(false);
+                }
+            };
+
+            fetchUserData();
+        }, [])
+    );
+
+    const fetchTierlists = async (token: string, uid: number) => {
+        try {
+            console.log(`Fetching tierlists for user ID: ${uid} with token: ${token?.substring(0, 10)}...`);
+
+            // Fetch user's tierlists
+            const response = await fetch(`http://localhost:8080/api/tiers/user/${uid}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                mode: 'cors',
+            });
+
+            const responseText = await response.text();
+            console.log(`Response status: ${response.status}`);
+            console.log(`Response body: ${responseText.substring(0, 100)}...`);
+
+            if (response.ok) {
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                    console.log(`Parsed ${data.length} tierlists`);
+                    setTierlists(data);
+                } catch (parseError) {
+                    console.error('Error parsing response as JSON:', parseError);
+                    setTierlists([]);
+                }
+            } else {
+                console.error('Failed to fetch tierlists:', response.status, response.statusText);
+                setTierlists([]);
+            }
+        } catch (error) {
+            console.error('Error fetching tierlists:', error);
+            setTierlists([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const fetchActiveTierlist = async (token: string, uid: number) => {
+        try {
+            // First check if user has an active tierlist
+            const response = await fetch(`http://localhost:8080/api/users/${uid}/activetier`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.activeTierlistId) {
+                    setActiveTierlistId(data.activeTierlistId);
+                    console.log(`Active tierlist ID: ${data.activeTierlistId}`);
+
+                    // Fetch the actual tierlist details
+                    const tierlistResponse = await fetch(`http://localhost:8080/api/tiers/${data.activeTierlistId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                        },
+                    });
+
+                    if (tierlistResponse.ok) {
+                        const tierlistData = await tierlistResponse.json();
+                        setActiveTierlist(tierlistData);
+                        console.log('Active tierlist loaded:', tierlistData.name);
+                    } else {
+                        setActiveTierlist(null);
+                    }
+                } else {
+                    setActiveTierlistId(null);
+                    setActiveTierlist(null);
+                }
+            } else {
+                setActiveTierlistId(null);
+                setActiveTierlist(null);
+            }
+        } catch (error) {
+            console.error('Error fetching active tierlist:', error);
+            setActiveTierlistId(null);
+            setActiveTierlist(null);
+        }
+    };
+
+    const handleSetActiveTierlist = async (tierlistId: number) => {
+        try {
+            console.log(`Setting tierlist ${tierlistId} as active for user ${userId}`);
+
+            const response = await fetch(`http://localhost:8080/api/users/${userId}/activetier/${tierlistId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${jwtToken}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.ok) {
+                setActiveTierlistId(tierlistId);
+
+                const selectedTierlist = tierlists.find(t => t.id === tierlistId);
+                if (selectedTierlist) {
+                    setActiveTierlist(selectedTierlist);
+                }
+
+                Alert.alert("Success", "Active tierlist updated successfully!");
+            } else {
+                Alert.alert("Error", "Failed to update active tierlist");
+            }
+        } catch (error) {
+            console.error('Error setting active tierlist:', error);
+            Alert.alert("Error", "An error occurred while updating active tierlist");
+        }
+    };
+
+    const handleCreateTierlist = () => {
+        router.push('/create-tierlists');
+    };
+
+    const handleViewTierlist = (id: number) => {
+        router.push({
+            pathname: '/tierlist/[id]',
+            params: { id: id.toString() }
+        });
+    };
+
+    if (isLoading) {
+        return (
+            <LinearGradient colors={['#000000', '#808080']} style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#FFFFFF" />
+                <Text style={styles.loadingText}>Loading your tierlists...</Text>
+                <TouchableOpacity
+                    style={styles.debugButton}
+                    onPress={() => {
+                        console.log('Debug button pressed, forcing state update');
+                        setIsLoading(false);
+                    }}
+                >
+                    <Text style={styles.debugButtonText}>Debug: Skip Loading</Text>
+                </TouchableOpacity>
+            </LinearGradient>
+        );
+    }
+
+    return (
+        <LinearGradient colors={['#000000', '#808080']} style={styles.container}>
+            <View style={styles.header}>
+                <Text style={styles.title}>Your Tierlists</Text>
+                <View style={styles.headerButtons}>
+                    <TouchableOpacity
+                        style={[styles.headerButton, styles.publicButton]}
+                        onPress={() => router.push('/public-tierlists')}
+                    >
+                        <Text style={styles.headerButtonText}>Public Lists</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.headerButton, styles.createButton]}
+                        onPress={handleCreateTierlist}
+                    >
+                        <Text style={styles.headerButtonText}>+ Create New</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
+                {/* Show Active Tierlist Section */}
+                {activeTierlist && activeTierlistId && jwtToken && (
+                    <View style={styles.activeTierlistSection}>
+                        <View style={styles.activeTierlistHeader}>
+                            <Text style={styles.activeTierlistTitle}>Active Tierlist: {activeTierlist.name}</Text>
+
+                            <View style={styles.activeRightSection}>
+                                {activeTierlist.isPublic && (
+                                    <View style={styles.publicBadgeActive}>
+                                        <Text style={styles.publicText}>Public</Text>
+                                    </View>
+                                )}
+                                <TouchableOpacity
+                                    style={styles.viewActiveButton}
+                                    onPress={() => handleViewTierlist(activeTierlistId)}
+                                >
+                                    <Text style={styles.viewActiveButtonText}>View Full</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        <View style={styles.compactViewContainer}>
+                            <CompactTierlistView
+                                tierlistId={activeTierlistId}
+                                jwtToken={jwtToken}
+                            />
+                        </View>
+                    </View>
+                )}
+
+                <View style={styles.listContainer}>
+                    <Text style={styles.subTitle}>All Your Tierlists</Text>
+
+                    {/* Filter out the active tierlist from the list */}
+                    {(activeTierlistId ? tierlists.filter(t => t.id !== activeTierlistId) : tierlists).length === 0 ? (
+                        <View style={styles.emptyContainer}>
+                            <Text style={styles.emptyText}>You haven't created any tierlists yet.</Text>
+                            <Text style={styles.emptySubtext}>Create your first tierlist to get started!</Text>
+                            <TouchableOpacity style={styles.emptyCreateButton} onPress={handleCreateTierlist}>
+                                <Text style={styles.emptyCreateButtonText}>Create Tierlist</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        // Using a regular map instead of FlatList for better ScrollView compatibility
+                        <View>
+                            {(activeTierlistId ? tierlists.filter(t => t.id !== activeTierlistId) : tierlists).map(item => (
+                                <TouchableOpacity
+                                    key={item.id}
+                                    style={[
+                                        styles.tierlistCard,
+                                        item.id === activeTierlistId && styles.activeTierlistCard
+                                    ]}
+                                    onPress={() => handleViewTierlist(item.id)}
+                                >
+                                    <View style={styles.tierlistHeader}>
+                                        <Text style={styles.tierlistName}>
+                                            {item.name}
+                                            {item.id === activeTierlistId &&
+                                                <Text style={styles.activeIndicator}> (Active)</Text>
+                                            }
+                                        </Text>
+                                        <View style={styles.badgeContainer}>
+                                            {item.isPublic && (
+                                                <View style={styles.publicBadge}>
+                                                    <Text style={styles.publicText}>Public</Text>
+                                                </View>
+                                            )}
+                                        </View>
+                                    </View>
+                                    {item.description && (
+                                        <Text style={styles.tierlistDescription}>{item.description}</Text>
+                                    )}
+                                    <View style={styles.tierPreview}>
+                                        {Object.entries(TIER_COLORS).slice(0, 5).map(([tier, color]) => (
+                                            <View key={tier} style={[styles.tierDot, {backgroundColor: color}]}>
+                                                <Text style={styles.tierDotText}>{tier}</Text>
+                                            </View>
+                                        ))}
+                                    </View>
+
+                                    <View style={styles.cardButtonsContainer}>
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.setActiveButton,
+                                                item.id === activeTierlistId && styles.activeButton
+                                            ]}
+                                            onPress={() => handleSetActiveTierlist(item.id)}
+                                            disabled={item.id === activeTierlistId}
+                                        >
+                                            <Text style={styles.setActiveButtonText}>
+                                                {item.id === activeTierlistId ? 'Active Tierlist' : 'Set as Active'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    )}
+                </View>
+            </ScrollView>
+        </LinearGradient>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    scrollContainer: {
+        flex: 1,
+        paddingHorizontal:120,
+        paddingVertical: 24,
+    },
+    scrollContent: {
+        paddingBottom: 24,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        color: 'white',
+        fontSize: 18,
+        marginTop: 16,
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 16,
+        paddingTop: 30,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: 'white',
+    },
+    subTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: 'white',
+        marginBottom: 12,
+        marginHorizontal: 16,
+    },
+    createButton: {
+        backgroundColor: '#4da6ff',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+    },
+    createButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+    },
+    headerButtons: {
+        flexDirection: 'row',
+    },
+    headerButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        marginLeft: 8,
+    },
+    headerButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+    },
+    publicButton: {
+        backgroundColor: '#FF9800',
+    },
+    activeTierlistSection: {
+        backgroundColor: 'rgba(77, 166, 255, 0.1)',
+        marginHorizontal: 16,
+        marginBottom: 16,
+        borderRadius: 10,
+        borderColor: '#4da6ff',
+        borderWidth: 2,
+        padding: 12,
+    },
+    activeTierlistHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    activeTierlistTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: 'white',
+    },
+    viewActiveButton: {
+        backgroundColor: '#4da6ff',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 6,
+    },
+    viewActiveButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 12,
+    },
+    compactViewContainer: {
+        height: 375,
+        borderRadius: 8,
+        overflow: 'hidden',
+    },
+    listContainer: {
+        flex: 1,
+        paddingHorizontal:16,
+    },
+    listContent: {
+        padding: 16,
+        paddingTop: 0,
+    },
+    tierlistCard: {
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        borderRadius: 10,
+        padding: 16,
+        marginBottom: 16,
+    },
+    activeTierlistCard: {
+        borderColor: '#4da6ff',
+        borderWidth: 2,
+        backgroundColor: 'rgba(77, 166, 255, 0.1)',
+    },
+    tierlistHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    tierlistName: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: 'white',
+    },
+    activeIndicator: {
+        color: '#4da6ff',
+        fontStyle: 'italic',
+    },
+    badgeContainer: {
+        flexDirection: 'row',
+    },
+    publicBadge: {
+        backgroundColor: '#32CD32',
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        borderRadius: 4,
+        marginLeft: 8,
+    },
+    publicText: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    tierlistDescription: {
+        color: '#e0e0e0',
+        marginBottom: 12,
+    },
+    tierPreview: {
+        flexDirection: 'row',
+        marginTop: 8,
+    },
+    tierDot: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.5)',
+    },
+    tierDotText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 12,
+    },
+    cardButtonsContainer: {
+        marginTop: 12,
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+    },
+    setActiveButton: {
+        backgroundColor: '#555555',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 4,
+    },
+    activeButton: {
+        backgroundColor: '#4da6ff',
+    },
+    setActiveButtonText: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 32,
+    },
+    emptyText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: 'white',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    emptySubtext: {
+        fontSize: 16,
+        color: '#e0e0e0',
+        marginBottom: 24,
+        textAlign: 'center',
+    },
+    emptyCreateButton: {
+        backgroundColor: '#4da6ff',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 8,
+    },
+    emptyCreateButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    debugButton: {
+        marginTop: 20,
+        backgroundColor: 'rgba(255, 0, 0, 0.3)',
+        padding: 10,
+        borderRadius: 5,
+    },
+    debugButtonText: {
+        color: 'white',
+    },
+    activeRightSection: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    publicBadgeActive: {
+        backgroundColor: '#32CD32',
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        borderRadius: 4,
+        marginRight: 8,
+    },
+
+});
+
+export default TierlistsScreen;
