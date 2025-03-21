@@ -167,8 +167,6 @@ const TierlistView: React.FC = () => {
 
     const handleItemAdd = async (tierId: number, name: string) => {
         try {
-            // In a real app, you would map the tier ID from the component to your actual tier ID
-            // Here we're just using the tier ID directly
             const response = await fetch(`http://localhost:8080/api/items`, {
                 method: 'POST',
                 headers: {
