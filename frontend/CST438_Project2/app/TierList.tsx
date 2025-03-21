@@ -101,9 +101,6 @@ const TierlistView: React.FC = () => {
             }
 
             const data: Item[] = await response.json();
-
-            // Group items by tier
-            // In a real app, you would group by actual tier IDs from your backend
             const groupedItems: Record<number, Item[]> = {
                 1: data.filter(item => item.rank === 1 || item.rank <= 10),
                 2: data.filter(item => item.rank > 10 && item.rank <= 20),
