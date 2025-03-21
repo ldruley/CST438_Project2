@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -129,7 +129,7 @@ const TierlistView: React.FC = () => {
 
     const handleItemMove = async (item: Item, direction: 'up' | 'down') => {
         try {
-            const newRank = direction === 'up' ? Math.max(1, item.rank - 1) : item.rank + 1;
+            const newRank = direction === 'up' ? Math.max(1, item.rank - 1) : Math.min(7, item.rank + 1);
 
             const response = await fetch(`http://localhost:8080/api/items/${item.id}/rank/${newRank}`, {
                 method: 'PUT',
@@ -283,7 +283,7 @@ const TierlistView: React.FC = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 16,
+        paddingHorizontal: 24, // Increased horizontal padding for the entire view
     },
     loadingContainer: {
         flex: 1,
@@ -300,8 +300,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 16,
-        paddingTop: 40, // Add space for status bar
+        marginBottom: 12, // Added some padding to the bottom of the header
+        paddingTop: 20, // Reduced vertical padding above header by 20px (was 40)
     },
     title: {
         fontSize: 24,
@@ -335,6 +335,7 @@ const styles = StyleSheet.create({
     },
     tierListContainer: {
         flex: 1,
+        paddingBottom: 10, // Added a bit of padding at the bottom of the container
     },
 });
 

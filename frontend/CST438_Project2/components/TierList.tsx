@@ -133,14 +133,14 @@ const TierRow: React.FC<{
 
 // Main TierList component
 const TierList: React.FC<TierListProps> = ({
-                                               tiers,
-                                               items = {},
-                                               isEditable = false,
-                                               onItemMove,
-                                               onItemDelete,
-                                               onItemAdd,
-                                               onTierNameChange,
-                                           }) => {
+   tiers,
+   items = {},
+   isEditable = false,
+   onItemMove,
+   onItemDelete,
+   onItemAdd,
+   onTierNameChange,
+}) => {
     return (
         <ScrollView style={styles.container}>
             {tiers.map((tier) => (

@@ -217,6 +217,7 @@ const TierlistsScreen: React.FC = () => {
                     <View style={styles.activeTierlistSection}>
                         <View style={styles.activeTierlistHeader}>
                             <Text style={styles.activeTierlistTitle}>Active Tierlist: {activeTierlist.name}</Text>
+
                             <TouchableOpacity
                                 style={styles.viewActiveButton}
                                 onPress={() => handleViewTierlist(activeTierlistId)}
@@ -314,6 +315,8 @@ const styles = StyleSheet.create({
     },
     scrollContainer: {
         flex: 1,
+        paddingHorizontal:120,
+        paddingVertical: 24,
     },
     scrollContent: {
         paddingBottom: 24, // Add padding at the bottom for better scrolling
@@ -333,7 +336,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: 16,
-        paddingTop: 60,
+        paddingTop: 30,
     },
     title: {
         fontSize: 24,
@@ -395,6 +398,7 @@ const styles = StyleSheet.create({
     },
     listContainer: {
         flex: 1,
+        paddingHorizontal:16,
     },
     listContent: {
         padding: 16,

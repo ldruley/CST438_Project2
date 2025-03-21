@@ -88,7 +88,7 @@ const CompactTierlistView: React.FC<CompactTierlistViewProps> = ({ tierlistId, j
 
       // Populate items based on their rank
       items.forEach(item => {
-        const tierName = TIER_RANKS[item.rank as keyof typeof TIER_RANKS] || 'S';
+        const tierName = TIER_RANKS[item.rank as keyof typeof TIER_RANKS];
         if (!itemsByTier[tierName]) {
           itemsByTier[tierName] = [];
         }
