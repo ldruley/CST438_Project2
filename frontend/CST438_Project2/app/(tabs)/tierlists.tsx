@@ -17,7 +17,6 @@ const TierlistsScreen: React.FC = () => {
     const [activeTierlistId, setActiveTierlistId] = useState<number | null>(null);
     const [activeTierlist, setActiveTierlist] = useState<Tierlist | null>(null);
 
-    // This hook will run when the component mounts and again every time the screen gains focus
     useFocusEffect(
         useCallback(() => {
             console.log('Tierlists screen focused - refreshing data');
@@ -64,12 +63,7 @@ const TierlistsScreen: React.FC = () => {
             };
 
             fetchUserData();
-
-            // Clean up function (optional)
-            return () => {
-                // Any cleanup if needed
-            };
-        }, []) // Empty dependency array means this runs on every focus
+        }, [])
     );
 
     const fetchTierlists = async (token: string, uid: number) => {
@@ -174,7 +168,6 @@ const TierlistsScreen: React.FC = () => {
             if (response.ok) {
                 setActiveTierlistId(tierlistId);
 
-                // Update the active tierlist in the state
                 const selectedTierlist = tierlists.find(t => t.id === tierlistId);
                 if (selectedTierlist) {
                     setActiveTierlist(selectedTierlist);
@@ -223,9 +216,20 @@ const TierlistsScreen: React.FC = () => {
         <LinearGradient colors={['#000000', '#808080']} style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.title}>Your Tierlists</Text>
-                <TouchableOpacity style={styles.createButton} onPress={handleCreateTierlist}>
-                    <Text style={styles.createButtonText}>+ Create New</Text>
-                </TouchableOpacity>
+                <View style={styles.headerButtons}>
+                    <TouchableOpacity
+                        style={[styles.headerButton, styles.publicButton]}
+                        onPress={() => router.push('/public-tierlists')}
+                    >
+                        <Text style={styles.headerButtonText}>Public Lists</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.headerButton, styles.createButton]}
+                        onPress={handleCreateTierlist}
+                    >
+                        <Text style={styles.headerButtonText}>+ Create New</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
@@ -343,7 +347,7 @@ const styles = StyleSheet.create({
         paddingVertical: 24,
     },
     scrollContent: {
-        paddingBottom: 24, // Add padding at the bottom for better scrolling
+        paddingBottom: 24,
     },
     loadingContainer: {
         flex: 1,
@@ -383,6 +387,22 @@ const styles = StyleSheet.create({
     createButtonText: {
         color: 'white',
         fontWeight: 'bold',
+    },
+    headerButtons: {
+        flexDirection: 'row',
+    },
+    headerButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        marginLeft: 8,
+    },
+    headerButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+    },
+    publicButton: {
+        backgroundColor: '#FF9800',
     },
     activeTierlistSection: {
         backgroundColor: 'rgba(77, 166, 255, 0.1)',

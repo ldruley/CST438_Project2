@@ -174,14 +174,6 @@ const EditTierlistContent: React.FC = () => {
                 throw new Error('Failed to update tierlist');
             }
 
-            // Update visibility separately
-            await fetch(`http://localhost:8080/api/tiers/${tierlistId}/visibility?isPublic=${isPublic}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${jwtToken}`,
-                },
-            });
-
             Alert.alert(
                 'Success',
                 'Tierlist updated successfully',
@@ -383,7 +375,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignSelf: 'center',
         width: '100%',
-        maxWidth: 800, // Restrict maximum width
+        maxWidth: 800,
         padding: 16,
     },
     formSection: {

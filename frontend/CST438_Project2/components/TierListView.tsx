@@ -188,9 +188,9 @@ const TierlistView: React.FC = () => {
                 },
                 body: JSON.stringify({
                     name,
-                    rank: tierId, // Use the tier ID as the rank
+                    rank: tierId,
                     tier: {
-                        id: parseInt(tierlistId || '0') // The actual tierlist ID
+                        id: parseInt(tierlistId || '0')
                     }
                 }),
             });
@@ -207,18 +207,6 @@ const TierlistView: React.FC = () => {
             console.error('Error adding item:', error);
             Alert.alert('Error', 'Failed to add item');
         }
-    };
-
-    const handleTierNameChange = async (tierId: number, name: string) => {
-        // In a real app, you would implement this to update the tier name in the backend
-        console.log(`Updating tier ${tierId} name to ${name}`);
-
-        // Update the local state for immediate feedback
-        setTiers(prevTiers =>
-            prevTiers.map(tier =>
-                tier.id === tierId ? { ...tier, name } : tier
-            )
-        );
     };
 
     if (isLoading) {
@@ -273,7 +261,6 @@ const TierlistView: React.FC = () => {
                     onItemMove={handleItemMove}
                     onItemDelete={handleItemDelete}
                     onItemAdd={handleItemAdd}
-                    onTierNameChange={handleTierNameChange}
                 />
             </View>
         </LinearGradient>
@@ -300,8 +287,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 12, // Added some padding to the bottom of the header
-        paddingTop: 20, // Reduced vertical padding above header by 20px (was 40)
+        marginBottom: 12,
+        paddingTop: 20,
     },
     title: {
         fontSize: 24,
@@ -335,7 +322,7 @@ const styles = StyleSheet.create({
     },
     tierListContainer: {
         flex: 1,
-        paddingBottom: 10, // Added a bit of padding at the bottom of the container
+        paddingBottom: 10,
     },
 });
 

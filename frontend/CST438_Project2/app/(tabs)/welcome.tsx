@@ -43,7 +43,7 @@ export default function WelcomeScreen() {
         console.log('Welcome screen is focused - refreshing data');
         setIsLoading(true);
         checkAuthStatus();
-      }, [])  // Empty dependency array means this runs on every focus
+      }, [])
   );
 
   const fetchActiveTierlist = async (token: string, uid: number) => {
@@ -101,7 +101,7 @@ export default function WelcomeScreen() {
   if (isLoading) {
     return (
         <LinearGradient colors={['#000000', '#808080']} style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FFFFFF" />
+          <ActivityIndicator size="large" color="#FFFFFF"/>
           <Text style={styles.loadingText}>Loading your dashboard...</Text>
         </LinearGradient>
     );
@@ -116,7 +116,8 @@ export default function WelcomeScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.content}>
+        <ScrollView style={styles.content}
+                    contentContainerStyle={activeTierlist ? styles.contentWithTierlist : styles.contentNoTierlist}>
           {activeTierlist ? (
               <View style={styles.activeTierlistContainer}>
                 <View style={styles.tierlistHeader}>
@@ -133,7 +134,7 @@ export default function WelcomeScreen() {
                         onPress={() =>
                             router.push({
                               pathname: '/tierlist/[id]',
-                              params: { id: activeTierlist.id.toString() }
+                              params: {id: activeTierlist.id.toString()}
                             })
                         }
                     >
@@ -160,17 +161,15 @@ export default function WelcomeScreen() {
               <View style={styles.noActiveTierlistContainer}>
                 <Text style={styles.noActiveTierlistText}>You don't have an active tierlist set</Text>
                 <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={() => router.push('/tierlists')}
+                    style={[styles.actionButton, styles.createTierButton]}
+                    onPress={() => router.push('/create-tierlists')}
                 >
-                  <Text style={styles.actionButtonText}>Go to My Tierlists</Text>
+                  <Text style={styles.actionButtonText}>Create a New Tierlist</Text>
                 </TouchableOpacity>
               </View>
           )}
 
-          <View style={styles.actionsContainer}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
-
+          <View style={activeTierlist ? styles.actionsContainer : styles.actionsContainerBottom}>
             <View style={styles.buttonRow}>
               <TouchableOpacity
                   style={[styles.actionButton, styles.myListsButton]}
@@ -181,7 +180,7 @@ export default function WelcomeScreen() {
 
               <TouchableOpacity
                   style={[styles.actionButton, styles.browseButton]}
-                  //onPress={() => router.push('/public-tierlists')}
+                  onPress={() => router.push('/public-tierlists')}
               >
                 <Text style={styles.actionButtonText}>Public Lists</Text>
               </TouchableOpacity>
@@ -234,6 +233,19 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingHorizontal: 75,
   },
+  contentWithTierlist: {
+    paddingBottom: 24,
+  },
+  contentNoTierlist: {
+    flexGrow: 1,
+    paddingBottom: 24,
+    justifyContent: 'space-between',
+    minHeight: '85%',
+  },
+  actionsContainerBottom: {
+    marginTop: 'auto',
+    marginBottom: 24,
+  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -267,7 +279,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#4da6ff',
   },
   createButtonSmall: {
-    backgroundColor: '#32CD32', // Green
+    backgroundColor: '#32CD32',
   },
   tierlistInfoCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -290,6 +302,12 @@ const styles = StyleSheet.create({
   tierlistViewContainer: {
     height: 375,
     marginTop: 8,
+  },
+  createTierButton: {
+    backgroundColor: '#4da6ff',
+    width: '15%',
+    marginBottom: 12,
+    marginTop:12,
   },
   noActiveTierlistContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -321,10 +339,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   myListsButton: {
-    backgroundColor: '#4da6ff', // Blue
+    backgroundColor: '#D84040',
   },
   browseButton: {
-    backgroundColor: '#FF9800', // Orange
+    backgroundColor: '#FF9800',
   },
   actionButtonText: {
     color: 'white',
