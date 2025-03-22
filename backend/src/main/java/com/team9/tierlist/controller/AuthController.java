@@ -12,11 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.team9.tierlist.model.User;
 import com.team9.tierlist.repository.UserRepository;
@@ -238,5 +234,34 @@ public ResponseEntity<?> testEncoder(@RequestParam String rawPassword) {
     
     return ResponseEntity.ok(response);
 }
+    @PatchMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestParam String username,
+
+                                            @RequestParam String newPassword,
+                                            @RequestParam Long userId) {
+        // Fetch user from the database
+        User user = userService.getUserByUsername(username);
+
+        if (user == null) {
+            return ResponseEntity.status(404).body("User not found");
+        }
+
+//        // Compare the provided old password with the stored (encoded) password
+//        boolean passwordMatches = passwordEncoder.matches(password, user.getPassword());
+//
+//        if (!passwordMatches) {
+//            return ResponseEntity.status(400).body("Old password is incorrect");
+//        }
+
+        // If the old password matches, encode the new password and save it
+        String encodedNewPassword = passwordEncoder.encode(newPassword);
+        user.setPassword(encodedNewPassword);
+
+        // Save the updated user
+        userService.updateUser(userId,user);
+
+        return ResponseEntity.ok("Password changed successfully");
+    }
+
     
 }

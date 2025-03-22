@@ -1,6 +1,8 @@
-import {StyleSheet, Image, Platform, View, Text,
+import {
+    StyleSheet, Image, Platform, View, Text,
     TextInput, TouchableOpacity, Button, ScrollView, Modal,
-    FlatList } from 'react-native';
+    FlatList, Alert
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {useState,useEffect, useCallback} from "react";
 // import axios from "axios";
@@ -42,8 +44,9 @@ export default function TabTwoScreen() {
     //for user to change name/pass
     const[userName,setUsername]= useState('');
     const[newUserName,setNewUsername]= useState('');
-    const [password,setPassword] = useState('');
+    const [newPassword,setNewPassword] = useState('');
     const [password2,setPassword2]= useState('');
+    // const [oldPass, setOldPass]= useState('');
     const [email,setEmail]= useState('');
     //trees
     // const [isAdmin,setAdmin]= useState(false)
@@ -52,8 +55,10 @@ export default function TabTwoScreen() {
     const[createUserName,setCreateUsername]= useState('');
     const [createPassword,setCreatePassword] = useState('');
     const [createEmail,setCreateEmail]= useState('');
+    const [createTextCon,setCreateTextCon]=useState('');
     //delete user var
-    const[delUserId,setDelUserId]=useState('')
+    const[delUserId,setDelUserId]=useState('');
+    const [matches, setMatches] = useState(null);
     //edit user var
     const[editUserId,setEditUserId] = useState('');
     const[editName,setEditName]=useState('');
@@ -78,7 +83,7 @@ export default function TabTwoScreen() {
 
     const resetFields = () => {
         setUsername('');
-        setPassword('');
+        setNewPassword('');
         setPassword2('');
         setEmail('');
         setDelUserId('');
@@ -141,6 +146,7 @@ export default function TabTwoScreen() {
                         setUserId(userData.id);
                         setUsername(userData.username);
                         setEmail(userData.email);
+                        // setOldPass(userData.password);
                         //trees
                         // setAdmin(userData.isAdmin);
 
@@ -219,47 +225,44 @@ export default function TabTwoScreen() {
     const handleConfirmPass = async ()=>{
         //call back end: updateUser
         //check if the 2 match, then update password
-        if(!password && !password2){
+        if(!newPassword && !password2){
             // if both empty
             console.log("empty both!");
         }
-        else if(!password|| !password2){
+        else if(!newPassword|| !password2){
             console.log("gotta fill both?");
         }
         else {
             //if
-            if( password!=password2){
+            if( newPassword!=password2){
                 console.log("no match!");
             }
             else{
-                console.log("set password!");
-                //TODO ...technically works, but isn't given super secret scramble...
-                const edited_user={
-                    password:password,
-                };
-                try{
 
-                    const response = await fetch(`http://localhost:8080/api/users/${userId}`,{
-                        method:"PATCH",
-                        headers:{
+                //TODO works, but "ResponseEntity.ok("Password changed successfully");" gets scared
+
+                try {
+                    const response = await fetch(`http://localhost:8080/auth/change-password?username=${userName}&newPassword=${newPassword}&userId=${userId}`, {
+                        method: 'PATCH',
+                        headers: {
                             'Authorization': `Bearer ${jwtToken}`,
-                            "Content-Type": "application/json",
-                            'Accept': 'application/json'
+                            'Accept': 'application/json',
                         },
-                        body: JSON.stringify(edited_user),
                         mode: "cors",
                     });
-                    if (response.ok){
-                        console.log("User edited (password)");
-                        resetFields();
-                    }
-                    else{
-                        console.log("failed to edit user")
-                    }
 
+                    const data = await response.json();
 
-                }catch (e){
-                    console.error("Error editing user: ", e);
+                    if (response.ok) {
+                        console.log('Password changed successfully:', data);
+                        // Optionally, inform the user with a success message
+                    } else {
+                        console.error('Failed to change password:', data);
+                        // Handle error case, inform the user about failure
+                    }
+                } catch (error) {
+                    console.error('Error changing password:', error);
+                    // Handle network or other errors
                 }
             }
 
@@ -331,37 +334,61 @@ export default function TabTwoScreen() {
 
     }
     const handleAdminCreate = async () => {
-
-        if (!userName || !password || !email) {
+        if (!createUserName || !createPassword || !createEmail) {
             console.error("All fields (username, password, email) are required");
             return;
         }
 
-        const newUser = {
-            username: createUserName,
-            password: createPassword,
-            email: createEmail,
-            isAdmin: false,
-        };
+        setIsLoading(true);
 
         try {
+            console.log("Starting account creation process...");
 
-            const response = await fetch("http://localhost:8080/api/users", {
-                method: "POST",
+            const params = new URLSearchParams();
+            params.append('username', createUserName);
+            params.append('email', createEmail);
+            params.append('password', createPassword);
+
+            const createResponse = await fetch('http://localhost:8080/auth/register', {
+                method: 'POST',
                 headers: {
-                    "Content-Type": "application/json",
+                    'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: JSON.stringify(newUser),
-                mode: "cors",
+                body: params.toString(),
             });
 
-            if (response.ok) {
-                console.log("User created successfully");
-            } else {
-                console.error("Failed to create user");
+            console.log("Response status:", createResponse.status);
+            const responseText = await createResponse.text();
+            console.log("Response body:", responseText);
+
+            if (!createResponse.ok) {
+                setIsLoading(false);
+                return;
             }
-        } catch (error) {
-            console.error("Error creating user:", error);
+
+            console.log("Account created successfully");
+
+            // Set success message BEFORE alert
+            setCreateTextCon(`User: ${createUserName} created!`);
+
+            // Delay for better UI update
+            setTimeout(() => {
+                Alert.alert("Success", "Account has been created.", [
+                    {
+                        text: "OK",
+                        onPress: () => {
+                            setIsLoading(false);
+                            setCreateUsername('');
+                            setCreateEmail('');
+                            setCreatePassword('');
+                        }
+                    }
+                ]);
+            }, 100);
+
+        } catch (err) {
+            console.error('Error during account creation:', err);
+            setIsLoading(false);
         }
     };
 
@@ -447,6 +474,7 @@ export default function TabTwoScreen() {
 
 
 
+
     return (
 
         <ScrollView style={styles.container} contentContainerStyle={{ alignItems: "center", justifyContent: "center" }}>
@@ -466,7 +494,7 @@ export default function TabTwoScreen() {
 
                 <View style={styles.overlay}>
                     <Text style={ styles.h5}>Change pass</Text>
-                    <CustomInput placeholder={"Password"} value={password} onChangeText={setPassword} secureTextEntry={true}/>
+                    <CustomInput placeholder={"Password"} value={newPassword} onChangeText={setNewPassword} secureTextEntry={true}/>
                     <Text style={ styles.h5}>ReEnter new pass</Text>
                     <CustomInput placeholder={"Password"} value={password2} onChangeText={setPassword2} secureTextEntry={true}/>
                     <TouchableOpacity style={styles.button} >
@@ -503,8 +531,8 @@ export default function TabTwoScreen() {
                                 color="#e74c3c"
                                 title={"Confirm"}
                                 onPress={async () => {
-                                    //TODO- compare input w/ current password
-                                    if (warnPass === tempPass) {
+                                    //TODO- compare input w/ current password (auth?)
+                                    if (matches) {
                                         await handleDelete();
                                         setUserModalVisible(false);
                                         setWarnPass('');
@@ -555,6 +583,10 @@ export default function TabTwoScreen() {
                             <TouchableOpacity style={styles.button} >
                                 <Text style={styles.buttonText} onPress={handleAdminCreate}>Create User</Text>
                             </TouchableOpacity>
+
+                                {createTextCon ? <Text style={styles.createCon}>{createTextCon}</Text> : null}
+
+
 
                         </View>
 
@@ -765,6 +797,9 @@ const styles = StyleSheet.create({
     },
     delBtn:{
         color:'red'
+    },
+    createCon:{
+        color:'#94ff57'
     }
 
 });
