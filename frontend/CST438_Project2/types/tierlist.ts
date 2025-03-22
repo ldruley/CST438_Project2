@@ -19,6 +19,7 @@ export interface Tier {
     name: string; // S, A, B, C, D, E, F
     color: string;
     description?: string;
+    createdDate?: string; // ISO date string from backend
 }
 
 export interface Tierlist {
@@ -28,6 +29,7 @@ export interface Tierlist {
     user?: User;
     isPublic?: boolean;
     items?: Item[];
+    createdDate?: string; // ISO date string from backend
 }
 
 // Used for mapping numeric ranks to tier names

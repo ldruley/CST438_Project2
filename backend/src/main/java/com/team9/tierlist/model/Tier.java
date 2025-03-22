@@ -2,6 +2,7 @@ package com.team9.tierlist.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -12,6 +13,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.PrePersist;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -36,6 +38,9 @@ public class Tier {
     @Column(name = "is_public", nullable = false)
     private Boolean isPublic = false; // Default to private
 
+    @Column(name = "created_date")
+    private LocalDateTime createdDate;
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     @JsonIgnoreProperties({"password", "tiers"})
@@ -44,6 +49,14 @@ public class Tier {
     @OneToMany(mappedBy = "tier")
     @JsonIgnoreProperties("tier")
     private List<Item> items = new ArrayList<>();
+
+    // Set creation date before persisting
+    @PrePersist
+    protected void onCreate() {
+        if (createdDate == null) {
+            createdDate = LocalDateTime.now();
+        }
+    }
 
     // Default constructor
     public Tier() {
@@ -131,8 +144,16 @@ public class Tier {
         this.isPublic = isPublic;
     }
 
+    public LocalDateTime getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(LocalDateTime createdDate) {
+        this.createdDate = createdDate;
+    }
+
     @Override
     public String toString() {
-        return "Tier [id=" + id + ", name=" + name + ", color=" + color + ", user=" + (user != null ? user.getUsername() : "none") + "]";
+        return "Tier [id=" + id + ", name=" + name + ", color=" + color + ", user=" + (user != null ? user.getUsername() : "none") + ", createdDate=" + createdDate + "]";
     }
 }
