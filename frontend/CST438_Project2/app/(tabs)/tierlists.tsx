@@ -317,8 +317,17 @@ const TierlistsScreen: React.FC = () => {
                     {/* Filter out the active tierlist from the list */}
                     {(activeTierlistId ? tierlists.filter(t => t.id !== activeTierlistId) : tierlists).length === 0 ? (
                         <View style={styles.emptyContainer}>
-                            <Text style={styles.emptyText}>You haven't created any tierlists yet.</Text>
-                            <Text style={styles.emptySubtext}>Create your first tierlist to get started!</Text>
+                            {activeTierlistId ? (
+                                <>
+                                    <Text style={styles.emptyText}>You've only created 1 tierlist!</Text>
+                                    <Text style={styles.emptySubtext}>Add more Tierlists below!</Text>
+                                </>
+                            ) : (
+                                <>
+                                    <Text style={styles.emptyText}>You haven't created any tierlists yet.</Text>
+                                    <Text style={styles.emptySubtext}>Create your first tierlist to get started!</Text>
+                                </>
+                            )}
                             <TouchableOpacity style={styles.emptyCreateButton} onPress={handleCreateTierlist}>
                                 <Text style={styles.emptyCreateButtonText}>Create Tierlist</Text>
                             </TouchableOpacity>
