@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   myListsButton: {
-    backgroundColor: '#D84040',
+    backgroundColor: '#8BC34A',
   },
   browseButton: {
     backgroundColor: '#FF9800',
