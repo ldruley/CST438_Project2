@@ -14,7 +14,7 @@ export default function WelcomeScreen() {
   return (
     <LinearGradient colors={['#000000', '#808080']} style={styles.container}>
       <View style={styles.overlay}>
-        <Text style={styles.title}>Welcome to Our App</Text>
+        <Text style={styles.title}>Welcome to Rankify!</Text>
         <Text style={styles.subtitle}>Login or create an account to continue</Text>
 
         {/* OAuth Login Button */}

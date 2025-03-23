@@ -443,5 +443,25 @@ public class UserController {
         boolean exists = userService.userExistsByUsername(username);
         return new ResponseEntity<>(Map.of("exists", exists), HttpStatus.OK);
     }
+
+
+    @PostMapping("/verify-password")
+    public ResponseEntity<?> verifyPassword(@RequestBody Map<String, String> credentials, Principal principal) {
+        String username = credentials.get("username");
+        String password = credentials.get("password");
+        // Check if the requesting user is trying to verify their own password
+        if (!principal.getName().equals(username)) {
+            return ResponseEntity.status(403).body("Unauthorized verification attempt");
+        }
+            
+            // Verify password
+            boolean isValid = userService.verifyUserPassword(username, password);
+            
+            if (isValid) {
+                return ResponseEntity.ok().build();
+            } else {
+                    return ResponseEntity.status(401).body("Invalid credentials");
+            }
+    }
 }
 

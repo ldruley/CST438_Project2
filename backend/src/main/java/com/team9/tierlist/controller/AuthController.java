@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.team9.tierlist.model.User;
 import com.team9.tierlist.repository.UserRepository;
@@ -170,56 +171,23 @@ public ResponseEntity<?> debugComplete(@RequestParam String username,
 
         }
     }
-
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(HttpServletResponse response) {
-        org.springframework.security.core.context.SecurityContextHolder.clearContext();
-
-        logger.info("User has been logged out");
-
-        return ResponseEntity.ok("Successfully logged out!");
-
-    }
-
-    @GetMapping("/debug/auth")
-    public ResponseEntity<String> debugAuthentication(HttpServletRequest request) {
+    public ResponseEntity<Map<String, String>> logout(HttpServletRequest request) {
+        // Extract token from Authorization header
         String authHeader = request.getHeader("Authorization");
-        Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-
-        StringBuilder debug = new StringBuilder();
-        debug.append("Authorization Header: ").append(authHeader != null ? authHeader.substring(0, 20) + "..." : "null");
-
-        debug.append("\n\nAuthentication exists: ").append(auth != null);
-
-        if (auth != null) {
-            debug.append("\nName: ").append(auth.getName());
-            debug.append("\nAuthenticated: ").append(auth.isAuthenticated());
-            debug.append("\nAuthorities: ").append(auth.getAuthorities());
-            debug.append("\nPrincipal Type: ").append(auth.getPrincipal().getClass().getName());
-        }
-
-        return ResponseEntity.ok(debug.toString());
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            // Invalidate the token
+            jwtTokenUtil.invalidateToken(token);
+            }
+            
+        // Clear security context
+        SecurityContextHolder.clearContext();
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Successfully logged out!");
+            
+        return ResponseEntity.ok(response);
     }
+   
+}
 
-    @GetMapping("/test-user-password")
-public ResponseEntity<?> testUserPassword(@RequestParam String username, @RequestParam String password) {
-    System.out.println("Testing user password for: " + username); 
-    
-    User user = userService.getUserByUsername(username);
-    if (user == null) {
-        System.out.println("User not found: " + username);
-        return ResponseEntity.status(404).body("User not found");
-    }
-    
-    System.out.println("User found in database");
-    System.out.println("Stored password (encoded): " + user.getPassword());
-    
-    boolean matches = passwordEncoder.matches(password, user.getPassword());
-    System.out.println("Password matches: " + matches);
-    
-    return ResponseEntity.ok(Map.of(
-        "userExists", true,
-        "passwordMatches", matches
-    ));
-}
-}

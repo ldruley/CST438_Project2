@@ -5,6 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +14,10 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.Collections;
 import java.util.function.Function;
 
 @Component
@@ -27,14 +31,17 @@ public class JwtTokenUtil {
     
     private SecretKey key;
     
+    
+    private final Set<String> tokenBlacklist = Collections.synchronizedSet(new HashSet<>());
+    
     @PostConstruct
     public void init() {
-        // If no key is provided in properties, generate one
+       
         if (secretKeyString == null || secretKeyString.isEmpty()) {
             key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
             System.out.println("Generated a secure random key for JWT signing");
         } else {
-            // Use the key from properties
+          
             key = Keys.hmacShaKeyFor(secretKeyString.getBytes(StandardCharsets.UTF_8));
             System.out.println("Using JWT key from application.properties, length: " + secretKeyString.length());
         }
@@ -64,6 +71,19 @@ public class JwtTokenUtil {
     private Boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
+    
+    // Check if a token is blacklisted
+    public boolean isTokenBlacklisted(String token) {
+        return tokenBlacklist.contains(token);
+    }
+    
+    // Invalidate a token by adding it to the blacklist
+    public void invalidateToken(String token) {
+        if (token != null) {
+            tokenBlacklist.add(token);
+            System.out.println("Token added to blacklist");
+        }
+    }
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
@@ -81,8 +101,36 @@ public class JwtTokenUtil {
                 .compact();
     }
 
+    // Validate token including blacklist check
     public boolean validateToken(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        return (username.equals(userDetails.getUsername()) 
+                && !isTokenExpired(token)
+                && !isTokenBlacklisted(token));
+    }
+    
+    @Scheduled(fixedRate = 86400000)
+    public void cleanupBlacklist() {
+        Date now = new Date();
+        Set<String> tokensToRemove = new HashSet<>();
+        
+        // Find all expired tokens in the blacklist
+        for (String token : tokenBlacklist) {
+            try {
+                Date expiration = extractExpiration(token);
+                if (expiration.before(now)) {
+                    tokensToRemove.add(token);
+                }
+            } catch (Exception e) {
+                
+                tokensToRemove.add(token);
+            }
+        }
+        
+        // Remove expired tokens from the blacklist
+        if (!tokensToRemove.isEmpty()) {
+            tokenBlacklist.removeAll(tokensToRemove);
+            System.out.println("Cleaned up " + tokensToRemove.size() + " expired tokens from blacklist");
+        }
     }
 }

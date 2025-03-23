@@ -119,9 +119,6 @@ public class UserService {
             return;  // Admin already exists
         }
 
-        if (adminPassword == null || adminPassword.isEmpty()) {
-            throw new IllegalArgumentException("Admin password not set in environment variables");
-        }
 
         // Create the admin user
         User admin = new User();
@@ -275,6 +272,15 @@ public boolean resetPassword(Long id, String newPassword) {
         return false;
     }
 }
+
+
+    public boolean verifyUserPassword(String username, String password) {
+        User user = getUserByUsername(username);
+        if (user == null) {
+            return false;
+            }
+        return passwordEncoder.matches(password, user.getPassword());
+    }
     
         /**
      * Logs out a user.
