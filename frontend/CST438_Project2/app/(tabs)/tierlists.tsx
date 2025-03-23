@@ -311,6 +311,7 @@ const TierlistsScreen: React.FC = () => {
                     </View>
                 )}
 
+
                 <View style={styles.listContainer}>
                     <Text style={styles.subTitle}>All Your Tierlists</Text>
 
@@ -340,10 +341,16 @@ const TierlistsScreen: React.FC = () => {
                                     key={tierlist.id}
                                     tierlist={tierlist}
                                     isActive={tierlist.id === activeTierlistId}
+                                    userId={userId} // Pass the current user ID
                                     onPress={() => handleViewTierlist(tierlist.id)}
                                     onSetActive={() => handleSetActiveTierlist(tierlist.id)}
+                                    onEdit={() => router.push({ // Add onEdit callback
+                                        pathname: '/edit-tierlist/[id]',
+                                        params: { id: tierlist.id.toString() }
+                                    })}
                                 />
                             ))}
+
                         </View>
                     )}
                 </View>

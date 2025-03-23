@@ -5,8 +5,10 @@ import { Tierlist, TIER_COLORS, TIER_RANKS } from '@/types/tierlist';
 interface TierlistCardProps {
     tierlist: Tierlist;
     isActive?: boolean;
+    userId?: number | null;
     onPress: () => void;
     onSetActive?: () => void;
+    onEdit?: () => void;
 }
 
 // Helper function to format date with relative time
@@ -71,13 +73,17 @@ const countItemsPerTier = (tierlist: Tierlist) => {
 const TierlistCard: React.FC<TierlistCardProps> = ({
                                                        tierlist,
                                                        isActive,
+                                                       userId,
                                                        onPress,
-                                                       onSetActive
+                                                       onSetActive,
+                                                       onEdit
                                                    }) => {
     // Get count of items per tier
     const itemCounts = countItemsPerTier(tierlist);
     // Get total items count
     const totalItems = tierlist.items?.length || 0;
+    // Check if the current user owns this tierlist
+    const isOwner = userId && tierlist.user && tierlist.user.id === userId;
 
     return (
         <TouchableOpacity
@@ -128,24 +134,34 @@ const TierlistCard: React.FC<TierlistCardProps> = ({
             </View>
 
             <View style={styles.bottomContainer}>
-
                 {tierlist.createdDate && (
                     <Text style={styles.createdDate}>Created: {formatRelativeTime(tierlist.createdDate)}</Text>
                 )}
-                {onSetActive && (
-                    <TouchableOpacity
-                        style={[
-                            styles.setActiveButton,
-                            isActive && styles.activeButton
-                        ]}
-                        onPress={onSetActive}
-                        disabled={isActive}
-                    >
-                        <Text style={styles.setActiveButtonText}>
-                            {isActive ? 'Active Tierlist' : 'Set as Active'}
-                        </Text>
-                    </TouchableOpacity>
-                )}
+                <View style={styles.buttonGroup}>
+                    {/* Show edit button only if the current user owns this tierlist */}
+                    {isOwner && onEdit && (
+                        <TouchableOpacity
+                            style={styles.editButton}
+                            onPress={onEdit}
+                        >
+                            <Text style={styles.buttonText}>Edit</Text>
+                        </TouchableOpacity>
+                    )}
+                    {onSetActive && (
+                        <TouchableOpacity
+                            style={[
+                                styles.setActiveButton,
+                                isActive && styles.activeButton
+                            ]}
+                            onPress={onSetActive}
+                            disabled={isActive}
+                        >
+                            <Text style={styles.buttonText}>
+                                {isActive ? 'Active Tierlist' : 'Set as Active'}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
             </View>
         </TouchableOpacity>
     );
@@ -213,7 +229,6 @@ const styles = StyleSheet.create({
         color: '#c0c0c0',
         fontSize: 12,
         fontStyle: 'italic',
-        marginBottom: 8,
     },
     tierPreview: {
         flexDirection: 'row',
@@ -254,8 +269,11 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: 'bold',
     },
+    buttonGroup: {
+        flexDirection: 'row',
+    },
     setActiveButton: {
-        backgroundColor: '#555555',
+        backgroundColor: '#8BC34A',
         paddingVertical: 6,
         paddingHorizontal: 12,
         borderRadius: 4,
@@ -263,11 +281,18 @@ const styles = StyleSheet.create({
     activeButton: {
         backgroundColor: '#4da6ff',
     },
-    setActiveButtonText: {
+    editButton: {
+        backgroundColor: '#4da6ff',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 4,
+        marginRight: 8,
+    },
+    buttonText: {
         color: 'white',
         fontSize: 12,
         fontWeight: 'bold',
-    },
+    }
 });
 
 export default TierlistCard;
