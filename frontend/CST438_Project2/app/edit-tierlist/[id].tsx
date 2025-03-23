@@ -212,13 +212,7 @@ const EditTierlistContent: React.FC = () => {
             }
 
             showAlert('Success', 'Tierlist updated successfully', [
-                { text: 'OK', onPress: () => {
-                        // Force refresh the previous screen by using replace instead of back
-                        router.replace({
-                            pathname: '/tierlist/[id]',
-                            params: { id: tierlistId }
-                        });
-                    }}
+                { text: 'OK', onPress: () => router.back() }
             ]);
         } catch (error) {
             console.error('Error updating tierlist:', error);

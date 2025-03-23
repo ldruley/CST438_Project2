@@ -52,7 +52,13 @@ const TierList: React.FC<TierListProps> = ({
         onDelete: (item: Item) => void;
     }> = ({ item, isEditable, onMove, onDelete }) => (
         <View style={styles.item}>
-            <Text style={styles.itemText}>{item.name}</Text>
+            <Text
+                style={styles.itemText}
+                numberOfLines={2}
+                ellipsizeMode="tail"
+            >
+                {item.name}
+            </Text>
             {isEditable && (
                 <View style={styles.itemActions}>
                     <TouchableOpacity onPress={() => onMove(item, 'up')} style={styles.actionButton}>

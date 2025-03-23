@@ -19,7 +19,13 @@ const TierRow: React.FC<TierRowProps> = ({ tierName, tierColor, items }) => {
           {items.length > 0 ? (
               items.map((item) => (
                   <View key={item.id} style={styles.item}>
-                    <Text style={styles.itemText}>{item.name}</Text>
+                    <Text
+                        style={styles.itemText}
+                        numberOfLines={2}
+                        ellipsizeMode="tail"
+                    >
+                      {item.name}
+                    </Text>
                   </View>
               ))
           ) : (
@@ -218,10 +224,10 @@ const styles = StyleSheet.create({
   },
   item: {
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    padding: 8,
+    padding: 4,
     borderRadius: 4,
     marginRight: 8,
-    marginVertical: 6,
+    marginVertical: 4,
     minWidth: 80,
     maxWidth: 120,
     justifyContent: 'center',
