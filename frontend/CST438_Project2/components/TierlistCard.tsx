@@ -140,7 +140,7 @@ const TierlistCard: React.FC<TierlistCardProps> = ({
                             style={styles.editButton}
                             onPress={onEdit}
                         >
-                            <Text style={styles.buttonText}>Edit</Text>
+                            <Text style={styles.buttonText}>Edit Details</Text>
                         </TouchableOpacity>
                     )}
                     {onSetActive && (

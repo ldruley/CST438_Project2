@@ -46,6 +46,10 @@ export default function WelcomeScreen() {
       }, [])
   );
 
+  const handleCreateTierlist = () => {
+    router.push('/create-tierlists');
+  };
+
   const fetchActiveTierlist = async (token: string, uid: number) => {
     try {
       // First check if user has an active tierlist
@@ -113,9 +117,25 @@ export default function WelcomeScreen() {
       <LinearGradient colors={['#000000', '#808080']} style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.welcomeText}>Welcome, {username}!</Text>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+                style={[styles.headerButton, styles.createButton]}
+                onPress={handleCreateTierlist}
+            >
+              <Text style={styles.headerButtonText}>+ Create New</Text>
+            </TouchableOpacity>
+          <TouchableOpacity
+              style={[styles.headerButton, styles.publicButton]}
+              onPress={() => router.push('/public-tierlists')}
+          >
+            <Text style={styles.headerButtonText}>Public Lists</Text>
+          </TouchableOpacity>
+
+
+          <TouchableOpacity style={[styles.headerButton, styles.logoutButton]} onPress={handleLogout}>
             <Text style={styles.logoutButtonText}>Logout</Text>
           </TouchableOpacity>
+          </View>
         </View>
 
         <ScrollView style={styles.content}
@@ -125,12 +145,6 @@ export default function WelcomeScreen() {
                 <View style={styles.tierlistHeader}>
                   <Text style={styles.sectionTitle}>Your Active Tierlist</Text>
                   <View style={styles.headerButtonGroup}>
-                    <TouchableOpacity
-                        style={[styles.headerButton, styles.createButtonSmall]}
-                        onPress={() => router.push('/create-tierlists')}
-                    >
-                      <Text style={styles.headerButtonText}>Create New</Text>
-                    </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.headerButton, styles.viewButton]}
                         onPress={() =>
@@ -266,16 +280,32 @@ const styles = StyleSheet.create({
   headerButtonGroup: {
     flexDirection: 'row',
   },
+  headerButtons: {
+    flexDirection: 'row',
+  },
   headerButton: {
     paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     borderRadius: 8,
     marginLeft: 8,
   },
   headerButtonText: {
     color: 'white',
     fontWeight: 'bold',
-    fontSize: 12,
+
+  },
+  createButton: {
+    backgroundColor: '#4da6ff',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  createButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  publicButton: {
+    backgroundColor: '#FF9800',
   },
   viewButton: {
     backgroundColor: '#4da6ff',

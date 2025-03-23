@@ -40,6 +40,20 @@ const TierlistsScreen: React.FC = () => {
         setAlertVisible(true);
     };
 
+    const handleLogout = async () => {
+        try {
+            await Promise.all([
+                AsyncStorage.removeItem('jwtToken'),
+                AsyncStorage.removeItem('username'),
+                AsyncStorage.removeItem('userId')
+            ]);
+            router.replace('/(tabs)/login');
+        } catch (error) {
+            console.error('Error during logout:', error);
+        }
+    };
+
+
     useFocusEffect(
         useCallback(() => {
             console.log('Tierlists screen focused - refreshing data');
@@ -266,16 +280,19 @@ const TierlistsScreen: React.FC = () => {
                 <Text style={styles.title}>Your Tierlists</Text>
                 <View style={styles.headerButtons}>
                     <TouchableOpacity
+                        style={[styles.headerButton, styles.createButton]}
+                        onPress={handleCreateTierlist}
+                    >
+                        <Text style={styles.headerButtonText}>+ Create New</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
                         style={[styles.headerButton, styles.publicButton]}
                         onPress={() => router.push('/public-tierlists')}
                     >
                         <Text style={styles.headerButtonText}>Public Lists</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.headerButton, styles.createButton]}
-                        onPress={handleCreateTierlist}
-                    >
-                        <Text style={styles.headerButtonText}>+ Create New</Text>
+                    <TouchableOpacity style={[styles.headerButton, styles.logoutButton]} onPress={handleLogout}>
+                        <Text style={styles.logoutButtonText}>Logout</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -397,6 +414,16 @@ const styles = StyleSheet.create({
         paddingHorizontal: 40,
         paddingTop: 40,
         paddingBottom: 20,
+    },
+    logoutButton: {
+        backgroundColor: '#ff6b6b',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+    },
+    logoutButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
     },
     title: {
         fontSize: 24,

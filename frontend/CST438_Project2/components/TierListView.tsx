@@ -295,7 +295,7 @@ const TierlistView: React.FC = () => {
                             params: { id: tierlistId }
                         })}
                     >
-                        <Text style={styles.editButtonText}>Edit</Text>
+                        <Text style={styles.editButtonText}>Edit Details</Text>
                     </TouchableOpacity>
                 )}
             </View>
