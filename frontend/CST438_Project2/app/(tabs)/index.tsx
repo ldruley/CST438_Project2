@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useAuthRequest, makeRedirectUri } from 'expo-auth-session'; 
 import { useNavigation } from '@react-navigation/native'; 
 import { router } from 'expo-router';
 import Constants from 'expo-constants';
@@ -15,7 +14,7 @@ export default function WelcomeScreen() {
   return (
     <LinearGradient colors={['#000000', '#808080']} style={styles.container}>
       <View style={styles.overlay}>
-        <Text style={styles.title}>Welcome to Our App</Text>
+        <Text style={styles.title}>Welcome to Rankify!</Text>
         <Text style={styles.subtitle}>Login or create an account to continue</Text>
 
         {/* OAuth Login Button */}
@@ -26,7 +25,7 @@ export default function WelcomeScreen() {
         {/* Create Account Button */}
         <TouchableOpacity 
           style={[styles.button, styles.createAccountButton]} 
-          onPress={() =>router.replace('/createAccount')} 
+          onPress={() =>router.push('/createAccount')} 
         >
           <Text style={styles.buttonText}>Create Account</Text>
         </TouchableOpacity>
