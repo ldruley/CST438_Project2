@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { Item, Tier, TIER_RANKS, TIER_COLORS } from '@/types/tierlist';
+import CustomAlert from '@/components/CustomAlert';
 
 interface TierListProps {
     tiers: Tier[];
@@ -12,150 +13,208 @@ interface TierListProps {
     onTierNameChange?: (tierId: number, name: string) => void;
 }
 
-// Individual item component
-const TierItem: React.FC<{
-    item: Item;
-    isEditable: boolean;
-    onMove: (item: Item, direction: 'up' | 'down') => void;
-    onDelete: (item: Item) => void;
-}> = ({ item, isEditable, onMove, onDelete }) => (
-    <View style={styles.item}>
-        <Text style={styles.itemText}>{item.name}</Text>
-        {isEditable && (
-            <View style={styles.itemActions}>
-                <TouchableOpacity onPress={() => onMove(item, 'up')} style={styles.actionButton}>
-                    <Text style={styles.actionButtonText}>↑</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => onMove(item, 'down')} style={styles.actionButton}>
-                    <Text style={styles.actionButtonText}>↓</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => onDelete(item)} style={styles.deleteButton}>
-                    <Text style={styles.actionButtonText}>×</Text>
-                </TouchableOpacity>
-            </View>
-        )}
-    </View>
-);
+const TierList: React.FC<TierListProps> = ({
+                                               tiers,
+                                               items = {},
+                                               isEditable = false,
+                                               onItemMove,
+                                               onItemDelete,
+                                               onItemAdd,
+                                               onTierNameChange,
+                                           }) => {
+    // Alert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({
+        title: '',
+        message: '',
+        buttons: [] as {
+            text: string;
+            style?: 'default' | 'cancel' | 'destructive';
+            onPress: () => void;
+        }[],
+    });
 
-// Add item input component
-const AddItemInput: React.FC<{
-    tierId: number;
-    onAdd: (tierId: number, name: string) => void;
-}> = ({ tierId, onAdd }) => {
-    const [newItemName, setNewItemName] = useState('');
-
-    const handleAddItem = () => {
-        if (newItemName.trim()) {
-            onAdd(tierId, newItemName);
-            setNewItemName('');
-        }
+    // Helper function to show alerts
+    const showAlert = (title: string, message: string, buttons: any[]) => {
+        setAlertConfig({
+            title,
+            message,
+            buttons,
+        });
+        setAlertVisible(true);
     };
 
-    return (
-        <View style={styles.addItemContainer}>
-            <TextInput
-                style={styles.addItemInput}
-                placeholder="New item"
-                value={newItemName}
-                onChangeText={setNewItemName}
-                placeholderTextColor="#999"
-            />
-            <TouchableOpacity style={styles.addItemButton} onPress={handleAddItem}>
-                <Text style={styles.addItemButtonText}>+</Text>
-            </TouchableOpacity>
+    // Individual item component
+    const TierItem: React.FC<{
+        item: Item;
+        isEditable: boolean;
+        onMove: (item: Item, direction: 'up' | 'down') => void;
+        onDelete: (item: Item) => void;
+    }> = ({ item, isEditable, onMove, onDelete }) => (
+        <View style={styles.item}>
+            <Text
+                style={styles.itemText}
+                numberOfLines={2}
+                ellipsizeMode="tail"
+            >
+                {item.name}
+            </Text>
+            {isEditable && (
+                <View style={styles.itemActions}>
+                    <TouchableOpacity onPress={() => onMove(item, 'up')} style={styles.actionButton}>
+                        <Text style={styles.actionButtonText}>↑</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => onMove(item, 'down')} style={styles.actionButton}>
+                        <Text style={styles.actionButtonText}>↓</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => {
+                        // Show confirmation alert before deleting
+                        showAlert(
+                            'Confirm Delete',
+                            `Are you sure you want to delete "${item.name}"?`,
+                            [
+                                {
+                                    text: 'Cancel',
+                                    style: 'cancel',
+                                    onPress: () => {}
+                                },
+                                {
+                                    text: 'Delete',
+                                    style: 'destructive',
+                                    onPress: () => onDelete(item)
+                                }
+                            ]
+                        );
+                    }} style={styles.deleteButton}>
+                        <Text style={styles.actionButtonText}>×</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
         </View>
     );
-};
 
-// Tier row component
-const TierRow: React.FC<{
-    tier: Tier;
-    tierItems?: Item[];
-    isEditable: boolean;
-    onItemMove?: (item: Item, direction: 'up' | 'down') => void;
-    onItemDelete?: (item: Item) => void;
-    onItemAdd?: (tierId: number, name: string) => void;
-    onTierNameChange?: (tierId: number, name: string) => void;
-}> = ({
-          tier,
-          tierItems = [],
-          isEditable,
-          onItemMove,
-          onItemDelete,
-          onItemAdd,
-          onTierNameChange,
-      }) => {
-    const handleItemMove = (item: Item, direction: 'up' | 'down') => {
-        if (onItemMove) {
-            onItemMove(item, direction);
-        }
+    // Add item input component
+    const AddItemInput: React.FC<{
+        tierId: number;
+        onAdd: (tierId: number, name: string) => void;
+    }> = ({ tierId, onAdd }) => {
+        const [newItemName, setNewItemName] = useState('');
+
+        const handleAddItem = () => {
+            if (newItemName.trim()) {
+                onAdd(tierId, newItemName);
+                setNewItemName('');
+            } else {
+                showAlert('Error', 'Please enter an item name', [{ text: 'OK', onPress: () => {} }]);
+            }
+        };
+
+        return (
+            <View style={styles.addItemContainer}>
+                <TextInput
+                    style={styles.addItemInput}
+                    placeholder="New item"
+                    value={newItemName}
+                    onChangeText={setNewItemName}
+                    placeholderTextColor="#999"
+                />
+                <TouchableOpacity style={styles.addItemButton} onPress={handleAddItem}>
+                    <Text style={styles.addItemButtonText}>+</Text>
+                </TouchableOpacity>
+            </View>
+        );
     };
 
-    const handleItemDelete = (item: Item) => {
-        if (onItemDelete) {
-            onItemDelete(item);
-        }
+    // Tier row component
+    const TierRow: React.FC<{
+        tier: Tier;
+        tierItems?: Item[];
+        isEditable: boolean;
+        onItemMove?: (item: Item, direction: 'up' | 'down') => void;
+        onItemDelete?: (item: Item) => void;
+        onItemAdd?: (tierId: number, name: string) => void;
+        onTierNameChange?: (tierId: number, name: string) => void;
+    }> = ({
+              tier,
+              tierItems = [],
+              isEditable,
+              onItemMove,
+              onItemDelete,
+              onItemAdd,
+              onTierNameChange,
+          }) => {
+        const handleItemMove = (item: Item, direction: 'up' | 'down') => {
+            if (onItemMove) {
+                onItemMove(item, direction);
+            }
+        };
+
+        const handleItemDelete = (item: Item) => {
+            if (onItemDelete) {
+                onItemDelete(item);
+            }
+        };
+
+        return (
+            <View style={[styles.tierRow, { backgroundColor: tier.color || TIER_COLORS[tier.name as keyof typeof TIER_COLORS] || '#333333' }]}>
+                <View style={styles.tierLabel}>
+                    {isEditable && onTierNameChange ? (
+                        <TextInput
+                            style={styles.tierNameInput}
+                            value={tier.name}
+                            onChangeText={(text) => onTierNameChange(tier.id, text)}
+                            maxLength={5}
+                        />
+                    ) : (
+                        <Text style={styles.tierName}>{tier.name}</Text>
+                    )}
+                </View>
+
+                <ScrollView horizontal style={styles.itemsContainer}>
+                    {tierItems.map((item) => (
+                        <TierItem
+                            key={item.id}
+                            item={item}
+                            isEditable={isEditable}
+                            onMove={handleItemMove}
+                            onDelete={handleItemDelete}
+                        />
+                    ))}
+
+                    {isEditable && onItemAdd && (
+                        <AddItemInput tierId={tier.id} onAdd={onItemAdd} />
+                    )}
+                </ScrollView>
+            </View>
+        );
     };
 
     return (
-        <View style={[styles.tierRow, { backgroundColor: tier.color || TIER_COLORS[tier.name as keyof typeof TIER_COLORS] || '#333333' }]}>
-            <View style={styles.tierLabel}>
-                {isEditable && onTierNameChange ? (
-                    <TextInput
-                        style={styles.tierNameInput}
-                        value={tier.name}
-                        onChangeText={(text) => onTierNameChange(tier.id, text)}
-                        maxLength={5}
-                    />
-                ) : (
-                    <Text style={styles.tierName}>{tier.name}</Text>
-                )}
-            </View>
-
-            <ScrollView horizontal style={styles.itemsContainer}>
-                {tierItems.map((item) => (
-                    <TierItem
-                        key={item.id}
-                        item={item}
+        <View style={styles.container}>
+            <ScrollView>
+                {tiers.map((tier) => (
+                    <TierRow
+                        key={tier.id}
+                        tier={tier}
+                        tierItems={items[tier.id] || []}
                         isEditable={isEditable}
-                        onMove={handleItemMove}
-                        onDelete={handleItemDelete}
+                        onItemMove={onItemMove}
+                        onItemDelete={onItemDelete}
+                        onItemAdd={onItemAdd}
+                        onTierNameChange={onTierNameChange}
                     />
                 ))}
-
-                {isEditable && onItemAdd && (
-                    <AddItemInput tierId={tier.id} onAdd={onItemAdd} />
-                )}
             </ScrollView>
-        </View>
-    );
-};
 
-// Main TierList component
-const TierList: React.FC<TierListProps> = ({
-   tiers,
-   items = {},
-   isEditable = false,
-   onItemMove,
-   onItemDelete,
-   onItemAdd,
-   onTierNameChange,
-}) => {
-    return (
-        <ScrollView style={styles.container}>
-            {tiers.map((tier) => (
-                <TierRow
-                    key={tier.id}
-                    tier={tier}
-                    tierItems={items[tier.id] || []}
-                    isEditable={isEditable}
-                    onItemMove={onItemMove}
-                    onItemDelete={onItemDelete}
-                    onItemAdd={onItemAdd}
-                    onTierNameChange={onTierNameChange}
-                />
-            ))}
-        </ScrollView>
+            {/* Custom Alert */}
+            <CustomAlert
+                isVisible={alertVisible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                buttons={alertConfig.buttons}
+                onBackdropPress={() => setAlertVisible(false)}
+            />
+        </View>
     );
 };
 

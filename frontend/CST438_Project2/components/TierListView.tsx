@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import TierList from '@/components/TierList';
 import { Item, Tier, Tierlist, TIER_RANKS, TIER_COLORS } from '@/types/tierlist';
+import CustomAlert from '@/components/CustomAlert';
 
 const TierlistView: React.FC = () => {
     const params = useLocalSearchParams();
@@ -13,12 +15,12 @@ const TierlistView: React.FC = () => {
 
     const [tierlist, setTierlist] = useState<Tierlist | null>(null);
     const [tiers, setTiers] = useState<Tier[]>([
-        { id: 1, name: "S", color: TIER_COLORS["S"] },
-        { id: 2, name: "A", color: TIER_COLORS["A"] },
-        { id: 3, name: "B", color: TIER_COLORS["B"] },
-        { id: 4, name: "C", color: TIER_COLORS["C"] },
-        { id: 5, name: "D", color: TIER_COLORS["D"] },
-        { id: 6, name: "E", color: TIER_COLORS["E"] },
+        { id: 1, name: "S+", color: TIER_COLORS["S+"] },
+        { id: 2, name: "S", color: TIER_COLORS["S"] },
+        { id: 3, name: "A", color: TIER_COLORS["A"] },
+        { id: 4, name: "B", color: TIER_COLORS["B"] },
+        { id: 5, name: "C", color: TIER_COLORS["C"] },
+        { id: 6, name: "D", color: TIER_COLORS["D"] },
         { id: 7, name: "F", color: TIER_COLORS["F"] },
     ]);
     const [items, setItems] = useState<Record<number, Item[]>>({});
@@ -26,6 +28,28 @@ const TierlistView: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [userId, setUserId] = useState<number | null>(null);
     const [jwtToken, setJwtToken] = useState('');
+
+    // Alert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({
+        title: '',
+        message: '',
+        buttons: [] as {
+            text: string;
+            style?: 'default' | 'cancel' | 'destructive';
+            onPress: () => void;
+        }[],
+    });
+
+    // Helper function to show alerts
+    const showAlert = (title: string, message: string, buttons: any[]) => {
+        setAlertConfig({
+            title,
+            message,
+            buttons,
+        });
+        setAlertVisible(true);
+    };
 
     // Fetch user ID and JWT token on component mount
     useEffect(() => {
@@ -46,55 +70,60 @@ const TierlistView: React.FC = () => {
         getUserInfo();
     }, []);
 
-    // Fetch tierlist data when component mounts or tierlistId changes
-    useEffect(() => {
+    // Use useFocusEffect to refresh the tierlist data whenever the screen is focused
+    useFocusEffect(
+        useCallback(() => {
+            const loadTierlistData = async () => {
+                if (tierlistId && jwtToken) {
+                    setIsLoading(true);
+                    try {
+                        await fetchTierlist();
+                    } catch (error) {
+                        console.error('Error in useFocusEffect:', error);
+                    } finally {
+                        setIsLoading(false);
+                    }
+                }
+            };
+
+            loadTierlistData();
+        }, [tierlistId, jwtToken, userId])
+    );
+
+    // Fetch tierlist data
+    const fetchTierlist = async () => {
         if (!tierlistId || !jwtToken) return;
 
-        const fetchTierlist = async () => {
-            setIsLoading(true);
-            try {
-                const response = await fetch(`http://localhost:8080/api/tiers/${tierlistId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${jwtToken}`,
-                    },
-                });
+        try {
+            console.log('Fetching tierlist data for ID:', tierlistId);
+            const response = await fetch(`http://localhost:8080/api/tiers/${tierlistId}`, {
+                headers: {
+                    'Authorization': `Bearer ${jwtToken}`,
+                },
+            });
 
-                if (!response.ok) {
-                    throw new Error('Failed to fetch tierlist');
-                }
-
-                const data: Tierlist = await response.json();
-                setTierlist(data);
-
-                // Check if user can edit this tierlist
-                if (userId && data.user && data.user.id === userId) {
-                    setIsEditable(true);
-                }
-
-                // Create standard tiers with IDs 1-7 mapping to S-F
-                const tiersList: Tier[] = [
-                    { id: 1, name: "S", color: TIER_COLORS["S"] },
-                    { id: 2, name: "A", color: TIER_COLORS["A"] },
-                    { id: 3, name: "B", color: TIER_COLORS["B"] },
-                    { id: 4, name: "C", color: TIER_COLORS["C"] },
-                    { id: 5, name: "D", color: TIER_COLORS["D"] },
-                    { id: 6, name: "E", color: TIER_COLORS["E"] },
-                    { id: 7, name: "F", color: TIER_COLORS["F"] },
-                ];
-                setTiers(tiersList);
-
-                // Fetch items for each tier
-                await fetchItems(tierlistId);
-            } catch (error) {
-                console.error('Error fetching tierlist:', error);
-                Alert.alert('Error', 'Failed to load tierlist');
-            } finally {
-                setIsLoading(false);
+            if (!response.ok) {
+                throw new Error('Failed to fetch tierlist');
             }
-        };
 
-        fetchTierlist();
-    }, [tierlistId, jwtToken, userId]);
+            const data: Tierlist = await response.json();
+            console.log('Fetched tierlist data:', data);
+            setTierlist(data);
+
+            // Check if user can edit this tierlist
+            if (userId && data.user && data.user.id === userId) {
+                setIsEditable(true);
+            } else {
+                setIsEditable(false);
+            }
+
+            // Fetch items for the tierlist
+            await fetchItems(tierlistId);
+        } catch (error) {
+            console.error('Error fetching tierlist:', error);
+            showAlert('Error', 'Failed to load tierlist', [{ text: 'OK', onPress: () => {} }]);
+        }
+    };
 
     const fetchItems = async (tierId: string) => {
         try {
@@ -110,14 +139,14 @@ const TierlistView: React.FC = () => {
 
             const data: Item[] = await response.json();
 
-            // Group items by tier/rank (1-7 for S-F)
+            // Group items by tier/rank (1-7 for S+, S, A, B, C, D, F)
             const groupedItems: Record<number, Item[]> = {
-                1: data.filter(item => item.rank === 1),  // S tier
-                2: data.filter(item => item.rank === 2),  // A tier
-                3: data.filter(item => item.rank === 3),  // B tier
-                4: data.filter(item => item.rank === 4),  // C tier
-                5: data.filter(item => item.rank === 5),  // D tier
-                6: data.filter(item => item.rank === 6),  // E tier
+                1: data.filter(item => item.rank === 1),  // S+ tier
+                2: data.filter(item => item.rank === 2),  // S tier
+                3: data.filter(item => item.rank === 3),  // A tier
+                4: data.filter(item => item.rank === 4),  // B tier
+                5: data.filter(item => item.rank === 5),  // C tier
+                6: data.filter(item => item.rank === 6),  // D tier
                 7: data.filter(item => item.rank === 7),  // F tier
             };
 
@@ -149,37 +178,59 @@ const TierlistView: React.FC = () => {
             }
         } catch (error) {
             console.error('Error moving item:', error);
-            Alert.alert('Error', 'Failed to move item');
+            showAlert('Error', 'Failed to move item', [{ text: 'OK', onPress: () => {} }]);
         }
     };
 
     const handleItemDelete = async (item: Item) => {
         try {
-            const response = await fetch(`http://localhost:8080/api/items/${item.id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${jwtToken}`,
-                },
-            });
+            showAlert(
+                'Confirm Delete',
+                `Are you sure you want to delete "${item.name}"?`,
+                [
+                    {
+                        text: 'Cancel',
+                        style: 'cancel',
+                        onPress: () => {}
+                    },
+                    {
+                        text: 'Delete',
+                        style: 'destructive',
+                        onPress: async () => {
+                            try {
+                                const response = await fetch(`http://localhost:8080/api/items/${item.id}`, {
+                                    method: 'DELETE',
+                                    headers: {
+                                        'Authorization': `Bearer ${jwtToken}`,
+                                    },
+                                });
 
-            if (!response.ok) {
-                throw new Error('Failed to delete item');
-            }
+                                if (!response.ok) {
+                                    throw new Error('Failed to delete item');
+                                }
 
-            // Refresh items
-            if (tierlistId) {
-                await fetchItems(tierlistId);
-            }
+                                // Refresh items
+                                if (tierlistId) {
+                                    await fetchItems(tierlistId);
+                                }
+                            } catch (error) {
+                                console.error('Error deleting item:', error);
+                                showAlert('Error', 'Failed to delete item', [{ text: 'OK', onPress: () => {} }]);
+                            }
+                        }
+                    }
+                ]
+            );
         } catch (error) {
-            console.error('Error deleting item:', error);
-            Alert.alert('Error', 'Failed to delete item');
+            console.error('Error in handleItemDelete:', error);
+            showAlert('Error', 'An unexpected error occurred', [{ text: 'OK', onPress: () => {} }]);
         }
     };
 
     const handleItemAdd = async (tierId: number, name: string) => {
         try {
             // The tierId in our component corresponds directly to the rank in the database
-            // S tier (id 1) = rank 1, A tier (id 2) = rank 2, etc.
+            // S+ tier (id 1) = rank 1, S tier (id 2) = rank 2, etc.
             const response = await fetch(`http://localhost:8080/api/items`, {
                 method: 'POST',
                 headers: {
@@ -205,7 +256,7 @@ const TierlistView: React.FC = () => {
             }
         } catch (error) {
             console.error('Error adding item:', error);
-            Alert.alert('Error', 'Failed to add item');
+            showAlert('Error', 'Failed to add item', [{ text: 'OK', onPress: () => {} }]);
         }
     };
 
@@ -244,7 +295,7 @@ const TierlistView: React.FC = () => {
                             params: { id: tierlistId }
                         })}
                     >
-                        <Text style={styles.editButtonText}>Edit</Text>
+                        <Text style={styles.editButtonText}>Edit Details</Text>
                     </TouchableOpacity>
                 )}
             </View>
@@ -252,6 +303,13 @@ const TierlistView: React.FC = () => {
             {tierlist.description && (
                 <Text style={styles.description}>{tierlist.description}</Text>
             )}
+
+            {/* Display public/private status */}
+            <View style={styles.statusContainer}>
+                <Text style={[styles.statusText, tierlist.isPublic ? styles.publicStatus : styles.privateStatus]}>
+                    {tierlist.isPublic ? 'Public' : 'Private'} Tierlist
+                </Text>
+            </View>
 
             <View style={styles.tierListContainer}>
                 <TierList
@@ -263,6 +321,15 @@ const TierlistView: React.FC = () => {
                     onItemAdd={handleItemAdd}
                 />
             </View>
+
+            {/* Custom Alert */}
+            <CustomAlert
+                isVisible={alertVisible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                buttons={alertConfig.buttons}
+                onBackdropPress={() => setAlertVisible(false)}
+            />
         </LinearGradient>
     );
 };
@@ -270,7 +337,7 @@ const TierlistView: React.FC = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingHorizontal: 24, // Increased horizontal padding for the entire view
+        paddingHorizontal: 135,
     },
     loadingContainer: {
         flex: 1,
@@ -300,8 +367,28 @@ const styles = StyleSheet.create({
     description: {
         fontSize: 16,
         color: '#e0e0e0',
-        marginBottom: 16,
+        marginBottom: 12,
         textAlign: 'center',
+    },
+    statusContainer: {
+        marginBottom: 16,
+        alignItems: 'center',
+    },
+    statusText: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 12,
+        overflow: 'hidden',
+    },
+    publicStatus: {
+        backgroundColor: '#8BC34A',
+        color: 'white',
+    },
+    privateStatus: {
+        backgroundColor: '#FF9800',
+        color: 'white',
     },
     backButton: {
         padding: 8,

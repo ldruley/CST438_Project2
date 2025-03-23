@@ -1,5 +1,6 @@
 package com.team9.tierlist.controller;
 
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ import jakarta.validation.Valid;
 public class TierController {
 
     private static final Logger logger = LoggerFactory.getLogger(TierController.class);
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Autowired
     private TierService tierService;
@@ -81,7 +83,9 @@ public class TierController {
 
         Tier createdTier = tierService.createTier(tier, userId);
         if (createdTier != null) {
-            logger.info("Tier created successfully with ID: " + createdTier.getId());
+            logger.info("Tier created successfully with ID: " + createdTier.getId() +
+                    ", created at: " + (createdTier.getCreatedDate() != null ?
+                    createdTier.getCreatedDate().format(DATE_FORMATTER) : "NULL"));
             return new ResponseEntity<>(createdTier, HttpStatus.CREATED);
         }
         logger.info("Failed to create tier");

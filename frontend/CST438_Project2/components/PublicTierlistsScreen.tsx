@@ -4,8 +4,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TIER_COLORS, Tierlist } from '@/types/tierlist';
-import CompactTierlistView from '@/components/CompactTierlistView';
+import { Tierlist } from '@/types/tierlist';
+import TierlistCard from '@/components/TierlistCard';
+import CustomAlert from '@/components/CustomAlert';
 
 const PublicTierlistsScreen = () => {
     const router = useRouter();
@@ -13,6 +14,28 @@ const PublicTierlistsScreen = () => {
     const [publicTierlists, setPublicTierlists] = useState<Tierlist[]>([]);
     const [jwtToken, setJwtToken] = useState<string | null>(null);
     const [userId, setUserId] = useState<number | null>(null);
+
+    // Alert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({
+        title: '',
+        message: '',
+        buttons: [] as {
+            text: string;
+            style?: 'default' | 'cancel' | 'destructive';
+            onPress: () => void;
+        }[],
+    });
+
+    // Helper function to show alerts
+    const showAlert = (title: string, message: string, buttons: any[]) => {
+        setAlertConfig({
+            title,
+            message,
+            buttons,
+        });
+        setAlertVisible(true);
+    };
 
     useFocusEffect(
         useCallback(() => {
@@ -49,6 +72,7 @@ const PublicTierlistsScreen = () => {
                     }
                 } catch (error) {
                     console.error('Error fetching user data:', error);
+                    showAlert('Error', 'Failed to fetch user data', [{ text: 'OK', onPress: () => {} }]);
                     setJwtToken(null);
                     setUserId(null);
                     setIsLoading(false);
@@ -86,14 +110,17 @@ const PublicTierlistsScreen = () => {
                     setPublicTierlists(data);
                 } catch (parseError) {
                     console.error('Error parsing response as JSON:', parseError);
+                    showAlert('Error', 'Failed to parse server response', [{ text: 'OK', onPress: () => {} }]);
                     setPublicTierlists([]);
                 }
             } else {
                 console.error('Failed to fetch public tierlists:', response.status, response.statusText);
+                showAlert('Error', `Failed to fetch public tierlists: ${response.status}`, [{ text: 'OK', onPress: () => {} }]);
                 setPublicTierlists([]);
             }
         } catch (error) {
             console.error('Error fetching public tierlists:', error);
+            showAlert('Error', `Network error: ${error instanceof Error ? error.message : String(error)}`, [{ text: 'OK', onPress: () => {} }]);
             setPublicTierlists([]);
         } finally {
             setIsLoading(false);
@@ -140,51 +167,28 @@ const PublicTierlistsScreen = () => {
                             </TouchableOpacity>
                         </View>
                     ) : (
-                        // Using a regular map instead of FlatList for better ScrollView compatibility
+                        // Using TierlistCard to display public tierlists
                         <View>
-                            {publicTierlists.map(item => (
-                                <TouchableOpacity
-                                    key={item.id}
-                                    style={styles.tierlistCard}
-                                    onPress={() => handleViewTierlist(item.id)}
-                                >
-                                    <View style={styles.tierlistHeader}>
-                                        <Text style={styles.tierlistName}>
-                                            {item.name}
-                                        </Text>
-                                        <View style={styles.creatorBadge}>
-                                            <Text style={styles.creatorText}>
-                                                by {item.user ? item.user.username : 'Unknown'}
-                                            </Text>
-                                        </View>
-                                    </View>
-
-                                    {item.description && (
-                                        <Text style={styles.tierlistDescription}>{item.description}</Text>
-                                    )}
-
-                                    <View style={styles.tierPreview}>
-                                        {Object.entries(TIER_COLORS).slice(0, 5).map(([tier, color]) => (
-                                            <View key={tier} style={[styles.tierDot, {backgroundColor: color}]}>
-                                                <Text style={styles.tierDotText}>{tier}</Text>
-                                            </View>
-                                        ))}
-                                    </View>
-
-                                    <View style={styles.cardButtonsContainer}>
-                                        <TouchableOpacity
-                                            style={styles.viewButton}
-                                            onPress={() => handleViewTierlist(item.id)}
-                                        >
-                                            <Text style={styles.viewButtonText}>View</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                </TouchableOpacity>
+                            {publicTierlists.map(tierlist => (
+                                <TierlistCard
+                                    key={tierlist.id}
+                                    tierlist={tierlist}
+                                    onPress={() => handleViewTierlist(tierlist.id)}
+                                />
                             ))}
                         </View>
                     )}
                 </View>
             </ScrollView>
+
+            {/* Custom Alert */}
+            <CustomAlert
+                isVisible={alertVisible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                buttons={alertConfig.buttons}
+                onBackdropPress={() => setAlertVisible(false)}
+            />
         </LinearGradient>
     );
 };
@@ -231,85 +235,9 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: 'white',
     },
-    subTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: 'white',
-        marginBottom: 12,
-        marginHorizontal: 16,
-    },
     listContainer: {
         flex: 1,
         paddingHorizontal: 120,
-    },
-    tierlistCard: {
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        borderRadius: 10,
-        padding: 16,
-        marginBottom: 16,
-    },
-    tierlistHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    tierlistName: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: 'white',
-        flex: 1,
-    },
-    creatorBadge: {
-        backgroundColor: '#FF9800',
-        paddingVertical: 4,
-        paddingHorizontal: 8,
-        borderRadius: 4,
-        marginLeft: 8,
-    },
-    creatorText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: 'bold',
-    },
-    tierlistDescription: {
-        color: '#e0e0e0',
-        marginBottom: 12,
-    },
-    tierPreview: {
-        flexDirection: 'row',
-        marginTop: 8,
-    },
-    tierDot: {
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 8,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.5)',
-    },
-    tierDotText: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 12,
-    },
-    cardButtonsContainer: {
-        marginTop: 12,
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-    },
-    viewButton: {
-        backgroundColor: '#4da6ff',
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 4,
-    },
-    viewButtonText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: 'bold',
     },
     emptyContainer: {
         flex: 1,

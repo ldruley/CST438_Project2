@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { TIER_COLORS, TIER_RANKS, Item, Tier } from '@/types/tierlist';
+import CustomAlert from '@/components/CustomAlert';
 
 interface TierRowProps {
   tierName: string;
@@ -10,24 +11,30 @@ interface TierRowProps {
 
 const TierRow: React.FC<TierRowProps> = ({ tierName, tierColor, items }) => {
   return (
-    <View style={[styles.tierRow, { backgroundColor: tierColor }]}>
-      <View style={styles.tierLabel}>
-        <Text style={styles.tierName}>{tierName}</Text>
+      <View style={[styles.tierRow, { backgroundColor: tierColor }]}>
+        <View style={styles.tierLabel}>
+          <Text style={styles.tierName}>{tierName}</Text>
+        </View>
+        <ScrollView horizontal style={styles.itemsContainer} showsHorizontalScrollIndicator={false}>
+          {items.length > 0 ? (
+              items.map((item) => (
+                  <View key={item.id} style={styles.item}>
+                    <Text
+                        style={styles.itemText}
+                        numberOfLines={2}
+                        ellipsizeMode="tail"
+                    >
+                      {item.name}
+                    </Text>
+                  </View>
+              ))
+          ) : (
+              <View style={styles.emptyTier}>
+                <Text style={styles.emptyTierText}>No items</Text>
+              </View>
+          )}
+        </ScrollView>
       </View>
-      <ScrollView horizontal style={styles.itemsContainer} showsHorizontalScrollIndicator={false}>
-        {items.length > 0 ? (
-          items.map((item) => (
-            <View key={item.id} style={styles.item}>
-              <Text style={styles.itemText}>{item.name}</Text>
-            </View>
-          ))
-        ) : (
-          <View style={styles.emptyTier}>
-            <Text style={styles.emptyTierText}>No items</Text>
-          </View>
-        )}
-      </ScrollView>
-    </View>
   );
 };
 
@@ -41,14 +48,35 @@ const CompactTierlistView: React.FC<CompactTierlistViewProps> = ({ tierlistId, j
   const [tierItems, setTierItems] = useState<Record<string, Item[]>>({});
   const [error, setError] = useState<string | null>(null);
 
-  // Standard tiers with fixed order
+  // Alert state
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    buttons: [] as {
+      text: string;
+      style?: 'default' | 'cancel' | 'destructive';
+      onPress: () => void;
+    }[],
+  });
+
+  // Helper function to show alerts
+  const showAlert = (title: string, message: string, buttons: any[]) => {
+    setAlertConfig({
+      title,
+      message,
+      buttons,
+    });
+    setAlertVisible(true);
+  };
+
   const standardTiers = [
-    { id: 1, name: 'S', color: TIER_COLORS['S'] },
-    { id: 2, name: 'A', color: TIER_COLORS['A'] },
-    { id: 3, name: 'B', color: TIER_COLORS['B'] },
-    { id: 4, name: 'C', color: TIER_COLORS['C'] },
-    { id: 5, name: 'D', color: TIER_COLORS['D'] },
-    { id: 6, name: 'E', color: TIER_COLORS['E'] },
+    { id: 1, name: 'S+', color: TIER_COLORS['S+'] },
+    { id: 2, name: 'S', color: TIER_COLORS['S'] },
+    { id: 3, name: 'A', color: TIER_COLORS['A'] },
+    { id: 4, name: 'B', color: TIER_COLORS['B'] },
+    { id: 5, name: 'C', color: TIER_COLORS['C'] },
+    { id: 6, name: 'D', color: TIER_COLORS['D'] },
     { id: 7, name: 'F', color: TIER_COLORS['F'] }
   ];
 
@@ -59,6 +87,7 @@ const CompactTierlistView: React.FC<CompactTierlistViewProps> = ({ tierlistId, j
   const fetchTierlistItems = async () => {
     if (!tierlistId || !jwtToken) {
       setError("Missing tierlist ID or authentication token");
+      showAlert('Error', 'Missing tierlist ID or authentication token', [{ text: 'OK', onPress: () => {} }]);
       setIsLoading(false);
       return;
     }
@@ -97,6 +126,7 @@ const CompactTierlistView: React.FC<CompactTierlistViewProps> = ({ tierlistId, j
       setError(null);
     } catch (err) {
       setError(`Error loading tierlist items: ${err instanceof Error ? err.message : String(err)}`);
+      showAlert('Error', `Failed to load tierlist items: ${err instanceof Error ? err.message : String(err)}`, [{ text: 'OK', onPress: () => {} }]);
       console.error("Error fetching tierlist items:", err);
     } finally {
       setIsLoading(false);
@@ -105,32 +135,41 @@ const CompactTierlistView: React.FC<CompactTierlistViewProps> = ({ tierlistId, j
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="small" color="#4da6ff" />
-        <Text style={styles.loadingText}>Loading tierlist...</Text>
-      </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color="#4da6ff" />
+          <Text style={styles.loadingText}>Loading tierlist...</Text>
+        </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error}</Text>
-      </View>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {standardTiers.map((tier) => (
-        <TierRow
-          key={tier.id}
-          tierName={tier.name}
-          tierColor={tier.color}
-          items={tierItems[tier.name] || []}
+      <View style={styles.container}>
+        {standardTiers.map((tier) => (
+            <TierRow
+                key={tier.id}
+                tierName={tier.name}
+                tierColor={tier.color}
+                items={tierItems[tier.name] || []}
+            />
+        ))}
+
+        {/* Custom Alert */}
+        <CustomAlert
+            isVisible={alertVisible}
+            title={alertConfig.title}
+            message={alertConfig.message}
+            buttons={alertConfig.buttons}
+            onBackdropPress={() => setAlertVisible(false)}
         />
-      ))}
-    </View>
+      </View>
   );
 };
 
@@ -185,10 +224,10 @@ const styles = StyleSheet.create({
   },
   item: {
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    padding: 8,
+    padding: 4,
     borderRadius: 4,
     marginRight: 8,
-    marginVertical: 6,
+    marginVertical: 4,
     minWidth: 80,
     maxWidth: 120,
     justifyContent: 'center',

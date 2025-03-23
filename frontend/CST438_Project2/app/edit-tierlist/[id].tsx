@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Switch, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Switch, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Tierlist } from '@/types/tierlist';
+import CustomAlert from '@/components/CustomAlert'; // Import the custom alert component
 
 export default function EditTierlistScreen() {
     return (
@@ -33,6 +34,18 @@ const EditTierlistContent: React.FC = () => {
     const [isActiveTierlist, setIsActiveTierlist] = useState(false);
     const [userId, setUserId] = useState<number | null>(null);
     const [jwtToken, setJwtToken] = useState('');
+
+    // State for custom alert
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({
+        title: '',
+        message: '',
+        buttons: [] as {
+            text: string;
+            style?: 'default' | 'cancel' | 'destructive';
+            onPress: () => void;
+        }[],
+    });
 
     // Fetch user ID and JWT token on component mount
     useEffect(() => {
@@ -75,17 +88,21 @@ const EditTierlistContent: React.FC = () => {
                 }
 
                 const data: Tierlist = await response.json();
+                console.log('Fetched tierlist data:', data);
 
                 // Check if user is the owner
                 if (userId && data.user && data.user.id !== userId) {
-                    Alert.alert('Error', 'You do not have permission to edit this tierlist');
-                    router.back();
+                    showAlert('Error', 'You do not have permission to edit this tierlist', [
+                        { text: 'OK', onPress: () => router.back() }
+                    ]);
                     return;
                 }
 
                 setName(data.name);
                 setDescription(data.description || '');
-                setIsPublic(data.isPublic || false);
+                // Make sure to properly initialize isPublic from the data
+                setIsPublic(data.isPublic === true);
+                console.log('Setting isPublic to:', data.isPublic);
 
                 // Check if this is the active tierlist
                 const activeResponse = await fetch(`http://localhost:8080/api/users/${userId}/activetier`, {
@@ -102,8 +119,9 @@ const EditTierlistContent: React.FC = () => {
                 }
             } catch (error) {
                 console.error('Error fetching tierlist:', error);
-                Alert.alert('Error', 'Failed to load tierlist');
-                router.back();
+                showAlert('Error', 'Failed to load tierlist', [
+                    { text: 'OK', onPress: () => router.back() }
+                ]);
             } finally {
                 setIsLoading(false);
             }
@@ -112,9 +130,19 @@ const EditTierlistContent: React.FC = () => {
         fetchTierlist();
     }, [tierlistId, jwtToken, userId]);
 
+    // Helper function to show alerts
+    const showAlert = (title: string, message: string, buttons: any[]) => {
+        setAlertConfig({
+            title,
+            message,
+            buttons,
+        });
+        setAlertVisible(true);
+    };
+
     const handleSetActiveList = async () => {
         if (!userId || !tierlistId) {
-            Alert.alert('Error', 'Unable to set active tierlist');
+            showAlert('Error', 'Unable to set active tierlist', [{ text: 'OK', onPress: () => {} }]);
             return;
         }
 
@@ -133,10 +161,10 @@ const EditTierlistContent: React.FC = () => {
             }
 
             setIsActiveTierlist(true);
-            Alert.alert('Success', 'This tierlist is now your active tierlist');
+            showAlert('Success', 'This tierlist is now your active tierlist', [{ text: 'OK', onPress: () => {} }]);
         } catch (error) {
             console.error('Error setting active tierlist:', error);
-            Alert.alert('Error', 'Failed to set active tierlist');
+            showAlert('Error', 'Failed to set active tierlist', [{ text: 'OK', onPress: () => {} }]);
         } finally {
             setIsSettingActive(false);
         }
@@ -144,21 +172,26 @@ const EditTierlistContent: React.FC = () => {
 
     const handleSubmit = async () => {
         if (!name.trim()) {
-            Alert.alert('Error', 'Please enter a tierlist name');
+            showAlert('Error', 'Please enter a tierlist name', [{ text: 'OK', onPress: () => {} }]);
             return;
         }
 
         if (!tierlistId) {
-            Alert.alert('Error', 'Tierlist ID is missing');
+            showAlert('Error', 'Tierlist ID is missing', [{ text: 'OK', onPress: () => {} }]);
             return;
         }
 
         setIsSubmitting(true);
 
         try {
+            console.log('Updating tierlist with the following data:');
+            console.log('Name:', name);
+            console.log('Description:', description);
+            console.log('isPublic:', isPublic);
+
             // Update the tierlist
             const tierlistResponse = await fetch(`http://localhost:8080/api/tiers/${tierlistId}`, {
-                method: 'PUT',
+                method: 'PATCH', // Using PATCH instead of PUT to update only specific fields
                 headers: {
                     'Authorization': `Bearer ${jwtToken}`,
                     'Content-Type': 'application/json',
@@ -170,78 +203,123 @@ const EditTierlistContent: React.FC = () => {
                 }),
             });
 
+            const responseText = await tierlistResponse.text();
+            console.log('Response status:', tierlistResponse.status);
+            console.log('Response body:', responseText);
+
             if (!tierlistResponse.ok) {
-                throw new Error('Failed to update tierlist');
+                throw new Error('Failed to update tierlist: ' + responseText);
             }
 
-            Alert.alert(
-                'Success',
-                'Tierlist updated successfully',
-                [
-                    {
-                        text: 'OK',
-                        onPress: () => router.replace({
-                            pathname: '/tierlist/[id]',
-                            params: { id: tierlistId }
-                        }),
-                    },
-                ]
-            );
+            showAlert('Success', 'Tierlist updated successfully', [
+                { text: 'OK', onPress: () => router.back() }
+            ]);
         } catch (error) {
             console.error('Error updating tierlist:', error);
-            Alert.alert('Error', 'Failed to update tierlist');
+            showAlert('Error', `Failed to update tierlist: ${error instanceof Error ? error.message : String(error)}`, [
+                { text: 'OK', onPress: () => {} }
+            ]);
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const handleDelete = async () => {
-        Alert.alert(
+    const confirmDelete = () => {
+        console.log('Opening delete confirmation dialog');
+
+        showAlert(
             'Delete Tierlist',
             'Are you sure you want to delete this tierlist? This action cannot be undone.',
             [
                 {
                     text: 'Cancel',
                     style: 'cancel',
+                    onPress: () => console.log('Delete canceled')
                 },
                 {
                     text: 'Delete',
                     style: 'destructive',
-                    onPress: async () => {
-                        setIsDeleting(true);
-                        try {
-                            const response = await fetch(`http://localhost:8080/api/tiers/${tierlistId}`, {
-                                method: 'DELETE',
-                                headers: {
-                                    'Authorization': `Bearer ${jwtToken}`,
-                                },
-                            });
-
-                            if (!response.ok) {
-                                const errorText = await response.text();
-                                throw new Error(errorText || 'Failed to delete tierlist');
-                            }
-
-                            Alert.alert(
-                                'Success',
-                                'Tierlist deleted successfully',
-                                [
-                                    {
-                                        text: 'OK',
-                                        onPress: () => router.replace('/'),
-                                    },
-                                ]
-                            );
-                        } catch (error) {
-                            console.error('Error deleting tierlist:', error);
-                            Alert.alert('Error', `Failed to delete tierlist: ${error instanceof Error ? error.message : String(error)}`);
-                        } finally {
-                            setIsDeleting(false);
-                        }
-                    },
+                    onPress: () => performDelete()
                 },
             ]
         );
+    };
+
+    const performDelete = async () => {
+        if (!tierlistId || !jwtToken) {
+            console.error('Missing tierlist ID or authorization');
+            return;
+        }
+
+        console.log('Starting delete operation');
+        setIsDeleting(true);
+
+        try {
+            console.log('Deleting tierlist with ID:', tierlistId);
+
+            // Check if tierlist has items
+            const itemsResponse = await fetch(`http://localhost:8080/api/tiers/${tierlistId}/items`, {
+                headers: {
+                    'Authorization': `Bearer ${jwtToken}`,
+                },
+            });
+
+            if (itemsResponse.ok) {
+                const items = await itemsResponse.json();
+                if (items && items.length > 0) {
+                    // If there are items, we need to delete them first
+                    console.log(`Tierlist has ${items.length} items. Deleting items first...`);
+
+                    // Delete items one by one
+                    for (const item of items) {
+                        await fetch(`http://localhost:8080/api/items/${item.id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Authorization': `Bearer ${jwtToken}`,
+                            },
+                        });
+                    }
+                }
+            }
+
+            // Now delete the tierlist
+            console.log('Sending DELETE request to endpoint...');
+            const response = await fetch(`http://localhost:8080/api/tiers/${tierlistId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${jwtToken}`,
+                },
+            });
+
+            console.log('Delete response status:', response.status);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Error text from server:', errorText);
+                throw new Error(errorText || 'Failed to delete tierlist');
+            }
+
+            console.log('Tierlist deleted successfully!');
+
+            // Show success alert and redirect to tierlists page
+            showAlert('Success', 'Tierlist deleted successfully', [
+                {
+                    text: 'OK',
+                    onPress: () => {
+                        console.log('Navigating to tierlists page...');
+                        // Redirect to the tierlists page instead of the home page
+                        router.replace('/tierlists');
+                    },
+                }
+            ]);
+        } catch (error) {
+            console.error('Error deleting tierlist:', error);
+            showAlert('Error', `Failed to delete tierlist: ${error instanceof Error ? error.message : String(error)}`, [
+                { text: 'OK', onPress: () => {} }
+            ]);
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     if (isLoading) {
@@ -291,11 +369,16 @@ const EditTierlistContent: React.FC = () => {
                         <Text style={styles.label}>Make Public</Text>
                         <Switch
                             value={isPublic}
-                            onValueChange={setIsPublic}
+                            onValueChange={(value) => {
+                                console.log('Switching isPublic to:', value);
+                                setIsPublic(value);
+                            }}
                             trackColor={{ false: '#767577', true: '#4da6ff' }}
                             thumbColor={isPublic ? '#fff' : '#f4f3f4'}
                         />
+                    </View>
 
+                    <View style={styles.switchContainer}>
                         <Text style={styles.label}>Set as Active Tierlist</Text>
                         <Switch
                             value={isActiveTierlist}
@@ -323,7 +406,10 @@ const EditTierlistContent: React.FC = () => {
 
                 <TouchableOpacity
                     style={[styles.deleteButton, isDeleting && styles.deleteButtonDisabled]}
-                    onPress={handleDelete}
+                    onPress={() => {
+                        console.log('Delete button pressed');
+                        confirmDelete();
+                    }}
                     disabled={isDeleting}
                 >
                     <Text style={styles.deleteButtonText}>
@@ -331,6 +417,15 @@ const EditTierlistContent: React.FC = () => {
                     </Text>
                 </TouchableOpacity>
             </ScrollView>
+
+            {/* Custom Alert */}
+            <CustomAlert
+                isVisible={alertVisible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                buttons={alertConfig.buttons}
+                onBackdropPress={() => setAlertVisible(false)}
+            />
         </LinearGradient>
     );
 };
