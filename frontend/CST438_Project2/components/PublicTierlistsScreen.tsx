@@ -6,6 +6,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Tierlist } from '@/types/tierlist';
 import TierlistCard from '@/components/TierlistCard';
+import CustomAlert from '@/components/CustomAlert';
 
 const PublicTierlistsScreen = () => {
     const router = useRouter();
@@ -13,6 +14,28 @@ const PublicTierlistsScreen = () => {
     const [publicTierlists, setPublicTierlists] = useState<Tierlist[]>([]);
     const [jwtToken, setJwtToken] = useState<string | null>(null);
     const [userId, setUserId] = useState<number | null>(null);
+
+    // Alert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({
+        title: '',
+        message: '',
+        buttons: [] as {
+            text: string;
+            style?: 'default' | 'cancel' | 'destructive';
+            onPress: () => void;
+        }[],
+    });
+
+    // Helper function to show alerts
+    const showAlert = (title: string, message: string, buttons: any[]) => {
+        setAlertConfig({
+            title,
+            message,
+            buttons,
+        });
+        setAlertVisible(true);
+    };
 
     useFocusEffect(
         useCallback(() => {
@@ -49,6 +72,7 @@ const PublicTierlistsScreen = () => {
                     }
                 } catch (error) {
                     console.error('Error fetching user data:', error);
+                    showAlert('Error', 'Failed to fetch user data', [{ text: 'OK', onPress: () => {} }]);
                     setJwtToken(null);
                     setUserId(null);
                     setIsLoading(false);
@@ -86,14 +110,17 @@ const PublicTierlistsScreen = () => {
                     setPublicTierlists(data);
                 } catch (parseError) {
                     console.error('Error parsing response as JSON:', parseError);
+                    showAlert('Error', 'Failed to parse server response', [{ text: 'OK', onPress: () => {} }]);
                     setPublicTierlists([]);
                 }
             } else {
                 console.error('Failed to fetch public tierlists:', response.status, response.statusText);
+                showAlert('Error', `Failed to fetch public tierlists: ${response.status}`, [{ text: 'OK', onPress: () => {} }]);
                 setPublicTierlists([]);
             }
         } catch (error) {
             console.error('Error fetching public tierlists:', error);
+            showAlert('Error', `Network error: ${error instanceof Error ? error.message : String(error)}`, [{ text: 'OK', onPress: () => {} }]);
             setPublicTierlists([]);
         } finally {
             setIsLoading(false);
@@ -153,6 +180,15 @@ const PublicTierlistsScreen = () => {
                     )}
                 </View>
             </ScrollView>
+
+            {/* Custom Alert */}
+            <CustomAlert
+                isVisible={alertVisible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                buttons={alertConfig.buttons}
+                onBackdropPress={() => setAlertVisible(false)}
+            />
         </LinearGradient>
     );
 };

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import TierList from '@/components/TierList';
 import { Item, Tier, Tierlist, TIER_RANKS, TIER_COLORS } from '@/types/tierlist';
+import CustomAlert from '@/components/CustomAlert';
 
 const TierlistView: React.FC = () => {
     const params = useLocalSearchParams();
@@ -27,6 +28,28 @@ const TierlistView: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [userId, setUserId] = useState<number | null>(null);
     const [jwtToken, setJwtToken] = useState('');
+
+    // Alert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({
+        title: '',
+        message: '',
+        buttons: [] as {
+            text: string;
+            style?: 'default' | 'cancel' | 'destructive';
+            onPress: () => void;
+        }[],
+    });
+
+    // Helper function to show alerts
+    const showAlert = (title: string, message: string, buttons: any[]) => {
+        setAlertConfig({
+            title,
+            message,
+            buttons,
+        });
+        setAlertVisible(true);
+    };
 
     // Fetch user ID and JWT token on component mount
     useEffect(() => {
@@ -98,7 +121,7 @@ const TierlistView: React.FC = () => {
             await fetchItems(tierlistId);
         } catch (error) {
             console.error('Error fetching tierlist:', error);
-            Alert.alert('Error', 'Failed to load tierlist');
+            showAlert('Error', 'Failed to load tierlist', [{ text: 'OK', onPress: () => {} }]);
         }
     };
 
@@ -155,30 +178,52 @@ const TierlistView: React.FC = () => {
             }
         } catch (error) {
             console.error('Error moving item:', error);
-            Alert.alert('Error', 'Failed to move item');
+            showAlert('Error', 'Failed to move item', [{ text: 'OK', onPress: () => {} }]);
         }
     };
 
     const handleItemDelete = async (item: Item) => {
         try {
-            const response = await fetch(`http://localhost:8080/api/items/${item.id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${jwtToken}`,
-                },
-            });
+            showAlert(
+                'Confirm Delete',
+                `Are you sure you want to delete "${item.name}"?`,
+                [
+                    {
+                        text: 'Cancel',
+                        style: 'cancel',
+                        onPress: () => {}
+                    },
+                    {
+                        text: 'Delete',
+                        style: 'destructive',
+                        onPress: async () => {
+                            try {
+                                const response = await fetch(`http://localhost:8080/api/items/${item.id}`, {
+                                    method: 'DELETE',
+                                    headers: {
+                                        'Authorization': `Bearer ${jwtToken}`,
+                                    },
+                                });
 
-            if (!response.ok) {
-                throw new Error('Failed to delete item');
-            }
+                                if (!response.ok) {
+                                    throw new Error('Failed to delete item');
+                                }
 
-            // Refresh items
-            if (tierlistId) {
-                await fetchItems(tierlistId);
-            }
+                                // Refresh items
+                                if (tierlistId) {
+                                    await fetchItems(tierlistId);
+                                }
+                            } catch (error) {
+                                console.error('Error deleting item:', error);
+                                showAlert('Error', 'Failed to delete item', [{ text: 'OK', onPress: () => {} }]);
+                            }
+                        }
+                    }
+                ]
+            );
         } catch (error) {
-            console.error('Error deleting item:', error);
-            Alert.alert('Error', 'Failed to delete item');
+            console.error('Error in handleItemDelete:', error);
+            showAlert('Error', 'An unexpected error occurred', [{ text: 'OK', onPress: () => {} }]);
         }
     };
 
@@ -211,7 +256,7 @@ const TierlistView: React.FC = () => {
             }
         } catch (error) {
             console.error('Error adding item:', error);
-            Alert.alert('Error', 'Failed to add item');
+            showAlert('Error', 'Failed to add item', [{ text: 'OK', onPress: () => {} }]);
         }
     };
 
@@ -276,6 +321,15 @@ const TierlistView: React.FC = () => {
                     onItemAdd={handleItemAdd}
                 />
             </View>
+
+            {/* Custom Alert */}
+            <CustomAlert
+                isVisible={alertVisible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                buttons={alertConfig.buttons}
+                onBackdropPress={() => setAlertVisible(false)}
+            />
         </LinearGradient>
     );
 };

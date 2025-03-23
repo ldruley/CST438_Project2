@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Switch } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Switch } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Tier, TIER_COLORS } from '@/types/tierlist';
+import CustomAlert from '@/components/CustomAlert';
 
 export default function CreateTierlistScreen() {
     return (
@@ -23,21 +24,45 @@ const CreateTierlistContent: React.FC = () => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [isPublic, setIsPublic] = useState(false);
+    const [makeActive, setMakeActive] = useState(true); // Default to setting as active
+    const [hasActiveTierlist, setHasActiveTierlist] = useState(false);
     // Predefined tiers with standard mapping
     const [tiers] = useState<Tier[]>([
-        { id: 1, name: 'S', color: TIER_COLORS['S'] },
-        { id: 2, name: 'A', color: TIER_COLORS['A'] },
-        { id: 3, name: 'B', color: TIER_COLORS['B'] },
-        { id: 4, name: 'C', color: TIER_COLORS['C'] },
-        { id: 5, name: 'D', color: TIER_COLORS['D'] },
-        { id: 6, name: 'E', color: TIER_COLORS['E'] },
+        { id: 1, name: 'S+', color: TIER_COLORS['S+'] },
+        { id: 2, name: 'S', color: TIER_COLORS['S'] },
+        { id: 3, name: 'A', color: TIER_COLORS['A'] },
+        { id: 4, name: 'B', color: TIER_COLORS['B'] },
+        { id: 5, name: 'C', color: TIER_COLORS['C'] },
+        { id: 6, name: 'D', color: TIER_COLORS['D'] },
         { id: 7, name: 'F', color: TIER_COLORS['F'] }
     ]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [userId, setUserId] = useState<number | null>(null);
     const [jwtToken, setJwtToken] = useState('');
 
-    // Fetch user ID and JWT token on component mount
+    // Custom alert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({
+        title: '',
+        message: '',
+        buttons: [] as {
+            text: string;
+            style?: 'default' | 'cancel' | 'destructive';
+            onPress: () => void;
+        }[],
+    });
+
+    // Helper function to show alerts
+    const showAlert = (title: string, message: string, buttons: any[]) => {
+        setAlertConfig({
+            title,
+            message,
+            buttons,
+        });
+        setAlertVisible(true);
+    };
+
+    // Fetch user ID, JWT token, and active tierlist status on component mount
     useEffect(() => {
         const getUserInfo = async () => {
             try {
@@ -45,8 +70,30 @@ const CreateTierlistContent: React.FC = () => {
                 const token = await AsyncStorage.getItem('jwtToken');
 
                 if (storedUserId && token) {
-                    setUserId(parseInt(storedUserId, 10));
+                    const uid = parseInt(storedUserId, 10);
+                    setUserId(uid);
                     setJwtToken(token);
+
+                    // Check if user has an active tierlist
+                    try {
+                        const response = await fetch(`http://localhost:8080/api/users/${uid}/hasactivetier`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                            },
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            setHasActiveTierlist(data.hasActiveTierlist);
+
+                            // If user already has an active tierlist, default the switch to off
+                            if (data.hasActiveTierlist) {
+                                setMakeActive(false);
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Error checking active tierlist:', err);
+                    }
                 } else {
                     // If no user ID or token, redirect to login
                     router.replace({
@@ -66,13 +113,17 @@ const CreateTierlistContent: React.FC = () => {
 
         if (!name.trim()) {
             console.log("Missing name - showing alert");
-            Alert.alert('Error', 'Please enter a tierlist name');
+            showAlert('Error', 'Please enter a tierlist name', [
+                { text: 'OK', onPress: () => {} }
+            ]);
             return;
         }
 
         if (!userId) {
             console.log("Missing userId - showing alert");
-            Alert.alert('Error', 'User not authenticated');
+            showAlert('Error', 'User not authenticated', [
+                { text: 'OK', onPress: () => {} }
+            ]);
             return;
         }
 
@@ -115,9 +166,28 @@ const CreateTierlistContent: React.FC = () => {
             const tierlist = JSON.parse(responseText);
             console.log("Tierlist created:", tierlist);
 
-            Alert.alert(
+            // If makeActive is true, set this as the active tierlist
+            if (makeActive) {
+                try {
+                    const activeResponse = await fetch(`http://localhost:8080/api/users/${userId}/activetier/${tierlist.id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${jwtToken}`,
+                            'Content-Type': 'application/json',
+                        },
+                    });
+
+                    if (!activeResponse.ok) {
+                        console.warn('Failed to set as active tierlist, but tierlist was created');
+                    }
+                } catch (activeError) {
+                    console.error('Error setting as active tierlist:', activeError);
+                }
+            }
+
+            showAlert(
                 'Success',
-                'Tierlist created successfully',
+                `Tierlist created successfully${makeActive ? ' and set as active' : ''}`,
                 [
                     {
                         text: 'OK',
@@ -133,7 +203,11 @@ const CreateTierlistContent: React.FC = () => {
             );
         } catch (error) {
             console.error('Error creating tierlist:', error);
-            //Alert.alert('Error', `Failed to create tierlist: ${error.message}`);
+            showAlert(
+                'Error',
+                `Failed to create tierlist: ${error instanceof Error ? error.message : String(error)}`,
+                [{ text: 'OK', onPress: () => {} }]
+            );
         } finally {
             console.log("Setting isSubmitting to false");
             setIsSubmitting(false);
@@ -183,6 +257,23 @@ const CreateTierlistContent: React.FC = () => {
                             thumbColor={isPublic ? '#fff' : '#f4f3f4'}
                         />
                     </View>
+
+                    <View style={styles.switchContainer}>
+                        <View style={styles.switchLabelContainer}>
+                            <Text style={styles.label}>Set as Active Tierlist</Text>
+                            {hasActiveTierlist && (
+                                <Text style={styles.helperText}>
+                                    (You already have an active tierlist)
+                                </Text>
+                            )}
+                        </View>
+                        <Switch
+                            value={makeActive}
+                            onValueChange={setMakeActive}
+                            trackColor={{ false: '#767577', true: '#32CD32' }}
+                            thumbColor={makeActive ? '#fff' : '#f4f3f4'}
+                        />
+                    </View>
                 </View>
 
                 <View style={styles.formSection}>
@@ -210,6 +301,15 @@ const CreateTierlistContent: React.FC = () => {
                     </Text>
                 </TouchableOpacity>
             </ScrollView>
+
+            {/* Custom Alert */}
+            <CustomAlert
+                isVisible={alertVisible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                buttons={alertConfig.buttons}
+                onBackdropPress={() => setAlertVisible(false)}
+            />
         </LinearGradient>
     );
 };
@@ -223,7 +323,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 16,
-        paddingTop: 30,
+        paddingTop: 50,
         paddingBottom: 16,
     },
     backButton: {
@@ -279,6 +379,15 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 16,
+    },
+    switchLabelContainer: {
+        flex: 1,
+    },
+    helperText: {
+        color: '#e0e0e0',
+        fontSize: 12,
+        fontStyle: 'italic',
+        marginTop: 2,
     },
     tierInfo: {
         color: 'white',

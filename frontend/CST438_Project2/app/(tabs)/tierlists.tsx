@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Tierlist } from '@/types/tierlist';
 import CompactTierlistView from '@/components/CompactTierlistView';
 import TierlistCard from '@/components/TierlistCard';
+import CustomAlert from '@/components/CustomAlert';
 
 const TierlistsScreen: React.FC = () => {
     const router = useRouter();
@@ -16,6 +17,28 @@ const TierlistsScreen: React.FC = () => {
     const [userId, setUserId] = useState<number | null>(null);
     const [activeTierlistId, setActiveTierlistId] = useState<number | null>(null);
     const [activeTierlist, setActiveTierlist] = useState<Tierlist | null>(null);
+
+    // Alert state
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({
+        title: '',
+        message: '',
+        buttons: [] as {
+            text: string;
+            style?: 'default' | 'cancel' | 'destructive';
+            onPress: () => void;
+        }[],
+    });
+
+    // Helper function to show alerts
+    const showAlert = (title: string, message: string, buttons: any[]) => {
+        setAlertConfig({
+            title,
+            message,
+            buttons,
+        });
+        setAlertVisible(true);
+    };
 
     useFocusEffect(
         useCallback(() => {
@@ -56,6 +79,7 @@ const TierlistsScreen: React.FC = () => {
                     }
                 } catch (error) {
                     console.error('Error fetching user data:', error);
+                    showAlert('Error', 'Failed to load user data', [{ text: 'OK', onPress: () => {} }]);
                     setJwtToken(null);
                     setUserId(null);
                     setIsLoading(false);
@@ -93,14 +117,17 @@ const TierlistsScreen: React.FC = () => {
                     setTierlists(data);
                 } catch (parseError) {
                     console.error('Error parsing response as JSON:', parseError);
+                    showAlert('Error', 'Failed to parse server response', [{ text: 'OK', onPress: () => {} }]);
                     setTierlists([]);
                 }
             } else {
                 console.error('Failed to fetch tierlists:', response.status, response.statusText);
+                showAlert('Error', `Server error: ${response.status}`, [{ text: 'OK', onPress: () => {} }]);
                 setTierlists([]);
             }
         } catch (error) {
             console.error('Error fetching tierlists:', error);
+            showAlert('Error', `Network error: ${error instanceof Error ? error.message : String(error)}`, [{ text: 'OK', onPress: () => {} }]);
             setTierlists([]);
         } finally {
             setIsLoading(false);
@@ -137,6 +164,7 @@ const TierlistsScreen: React.FC = () => {
                         console.log('Active tierlist loaded:', tierlistData.name);
                     } else {
                         setActiveTierlist(null);
+                        showAlert('Warning', 'Could not load active tierlist details', [{ text: 'OK', onPress: () => {} }]);
                     }
                 } else {
                     setActiveTierlistId(null);
@@ -145,11 +173,13 @@ const TierlistsScreen: React.FC = () => {
             } else {
                 setActiveTierlistId(null);
                 setActiveTierlist(null);
+                showAlert('Warning', 'Could not retrieve active tierlist information', [{ text: 'OK', onPress: () => {} }]);
             }
         } catch (error) {
             console.error('Error fetching active tierlist:', error);
             setActiveTierlistId(null);
             setActiveTierlist(null);
+            showAlert('Error', `Failed to fetch active tierlist: ${error instanceof Error ? error.message : String(error)}`, [{ text: 'OK', onPress: () => {} }]);
         }
     };
 
@@ -157,31 +187,56 @@ const TierlistsScreen: React.FC = () => {
         try {
             console.log(`Setting tierlist ${tierlistId} as active for user ${userId}`);
 
-            const response = await fetch(`http://localhost:8080/api/users/${userId}/activetier/${tierlistId}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${jwtToken}`,
-                    'Content-Type': 'application/json',
-                },
-            });
+            showAlert(
+                'Confirm Action',
+                'Are you sure you want to set this tierlist as your active tierlist?',
+                [
+                    {
+                        text: 'Cancel',
+                        style: 'cancel',
+                        onPress: () => {}
+                    },
+                    {
+                        text: 'Set as Active',
+                        onPress: async () => {
+                            try {
+                                const response = await fetch(`http://localhost:8080/api/users/${userId}/activetier/${tierlistId}`, {
+                                    method: 'PUT',
+                                    headers: {
+                                        'Authorization': `Bearer ${jwtToken}`,
+                                        'Content-Type': 'application/json',
+                                    },
+                                });
 
-            if (response.ok) {
-                setActiveTierlistId(tierlistId);
+                                if (response.ok) {
+                                    setActiveTierlistId(tierlistId);
 
-                const selectedTierlist = tierlists.find(t => t.id === tierlistId);
-                if (selectedTierlist) {
-                    setActiveTierlist(selectedTierlist);
-                }
+                                    const selectedTierlist = tierlists.find(t => t.id === tierlistId);
+                                    if (selectedTierlist) {
+                                        setActiveTierlist(selectedTierlist);
+                                    }
 
-                // After setting active, refresh the tierlist details
-                if (jwtToken && userId) {
-                    await fetchActiveTierlist(jwtToken, userId);
-                }
-            } else {
-                console.error('Failed to update active tierlist');
-            }
+                                    // After setting active, refresh the tierlist details
+                                    if (jwtToken && userId) {
+                                        await fetchActiveTierlist(jwtToken, userId);
+                                    }
+
+                                    showAlert('Success', 'Active tierlist updated successfully', [{ text: 'OK', onPress: () => {} }]);
+                                } else {
+                                    console.error('Failed to update active tierlist');
+                                    showAlert('Error', 'Failed to update active tierlist', [{ text: 'OK', onPress: () => {} }]);
+                                }
+                            } catch (error) {
+                                console.error('Error setting active tierlist:', error);
+                                showAlert('Error', `Network error: ${error instanceof Error ? error.message : String(error)}`, [{ text: 'OK', onPress: () => {} }]);
+                            }
+                        }
+                    }
+                ]
+            );
         } catch (error) {
-            console.error('Error setting active tierlist:', error);
+            console.error('Error in handleSetActiveTierlist:', error);
+            showAlert('Error', 'An unexpected error occurred', [{ text: 'OK', onPress: () => {} }]);
         }
     };
 
@@ -284,6 +339,15 @@ const TierlistsScreen: React.FC = () => {
                     )}
                 </View>
             </ScrollView>
+
+            {/* Custom Alert */}
+            <CustomAlert
+                isVisible={alertVisible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                buttons={alertConfig.buttons}
+                onBackdropPress={() => setAlertVisible(false)}
+            />
         </LinearGradient>
     );
 };

@@ -15,12 +15,12 @@ interface CustomAlertProps {
 }
 
 const CustomAlert: React.FC<CustomAlertProps> = ({
-                                                     isVisible,
-                                                     title,
-                                                     message,
-                                                     buttons,
-                                                     onBackdropPress,
-                                                 }) => {
+         isVisible,
+         title,
+         message,
+         buttons,
+         onBackdropPress,
+     }) => {
     return (
         <Modal
             isVisible={isVisible}

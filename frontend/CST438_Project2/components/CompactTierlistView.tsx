@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { TIER_COLORS, TIER_RANKS, Item, Tier } from '@/types/tierlist';
+import CustomAlert from '@/components/CustomAlert';
 
 interface TierRowProps {
   tierName: string;
@@ -41,6 +42,28 @@ const CompactTierlistView: React.FC<CompactTierlistViewProps> = ({ tierlistId, j
   const [tierItems, setTierItems] = useState<Record<string, Item[]>>({});
   const [error, setError] = useState<string | null>(null);
 
+  // Alert state
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    buttons: [] as {
+      text: string;
+      style?: 'default' | 'cancel' | 'destructive';
+      onPress: () => void;
+    }[],
+  });
+
+  // Helper function to show alerts
+  const showAlert = (title: string, message: string, buttons: any[]) => {
+    setAlertConfig({
+      title,
+      message,
+      buttons,
+    });
+    setAlertVisible(true);
+  };
+
   // Standard tiers with fixed order
   const standardTiers = [
     { id: 1, name: 'S+', color: TIER_COLORS['S+'] },
@@ -59,6 +82,7 @@ const CompactTierlistView: React.FC<CompactTierlistViewProps> = ({ tierlistId, j
   const fetchTierlistItems = async () => {
     if (!tierlistId || !jwtToken) {
       setError("Missing tierlist ID or authentication token");
+      showAlert('Error', 'Missing tierlist ID or authentication token', [{ text: 'OK', onPress: () => {} }]);
       setIsLoading(false);
       return;
     }
@@ -97,6 +121,7 @@ const CompactTierlistView: React.FC<CompactTierlistViewProps> = ({ tierlistId, j
       setError(null);
     } catch (err) {
       setError(`Error loading tierlist items: ${err instanceof Error ? err.message : String(err)}`);
+      showAlert('Error', `Failed to load tierlist items: ${err instanceof Error ? err.message : String(err)}`, [{ text: 'OK', onPress: () => {} }]);
       console.error("Error fetching tierlist items:", err);
     } finally {
       setIsLoading(false);
@@ -130,6 +155,15 @@ const CompactTierlistView: React.FC<CompactTierlistViewProps> = ({ tierlistId, j
                 items={tierItems[tier.name] || []}
             />
         ))}
+
+        {/* Custom Alert */}
+        <CustomAlert
+            isVisible={alertVisible}
+            title={alertConfig.title}
+            message={alertConfig.message}
+            buttons={alertConfig.buttons}
+            onBackdropPress={() => setAlertVisible(false)}
+        />
       </View>
   );
 };
