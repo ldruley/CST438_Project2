@@ -14,14 +14,21 @@ const formatDate = (dateString?: string): string => {
     if (!dateString) return 'Unknown date';
 
     try {
+        // Handle ISO format dates from the backend
         const date = new Date(dateString);
+
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+            return 'Unknown date';
+        }
+
         return date.toLocaleDateString(undefined, {
             year: 'numeric',
             month: 'short',
             day: 'numeric'
         });
     } catch (e) {
-        return 'Invalid date';
+        return 'Unknown date';
     }
 };
 
@@ -45,6 +52,13 @@ const TierlistCard: React.FC<TierlistCardProps> = ({
                     {isActive && <Text style={styles.activeIndicator}> (Active)</Text>}
                 </Text>
                 <View style={styles.badgeContainer}>
+
+                    {tierlist.user && (
+                        <View style={styles.creatorBadge}>
+                            <Text style={styles.creatorText}>By: {tierlist.user.username}</Text>
+                        </View>
+                    )}
+
                     {tierlist.isPublic && (
                         <View style={styles.publicBadge}>
                             <Text style={styles.publicText}>Public</Text>
@@ -68,10 +82,6 @@ const TierlistCard: React.FC<TierlistCardProps> = ({
                     </View>
                 ))}
             </View>
-
-            {tierlist.user && (
-                <Text style={styles.createdBy}>By: {tierlist.user.username}</Text>
-            )}
 
             {onSetActive && (
                 <View style={styles.cardButtonsContainer}>
@@ -135,6 +145,18 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: 'bold',
     },
+    creatorBadge: {
+        backgroundColor: '#FF9800',
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        borderRadius: 4,
+        marginLeft: 8,
+    },
+    creatorText: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
     tierlistDescription: {
         color: '#e0e0e0',
         marginBottom: 8,
@@ -144,12 +166,6 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontStyle: 'italic',
         marginBottom: 8,
-    },
-    createdBy: {
-        color: '#c0c0c0',
-        fontSize: 12,
-        fontStyle: 'italic',
-        marginTop: 4,
     },
     tierPreview: {
         flexDirection: 'row',

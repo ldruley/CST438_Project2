@@ -18,6 +18,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 @Entity
 @Table(name = "tiers")
@@ -38,6 +39,8 @@ public class Tier {
     @Column(name = "is_public", nullable = false)
     private Boolean isPublic = false; // Default to private
 
+    // Add JsonFormat annotation to ensure consistent date formatting
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
     @Column(name = "created_date")
     private LocalDateTime createdDate;
 
