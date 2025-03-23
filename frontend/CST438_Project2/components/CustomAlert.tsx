@@ -15,12 +15,12 @@ interface CustomAlertProps {
 }
 
 const CustomAlert: React.FC<CustomAlertProps> = ({
-         isVisible,
-         title,
-         message,
-         buttons,
-         onBackdropPress,
-     }) => {
+                                                     isVisible,
+                                                     title,
+                                                     message,
+                                                     buttons,
+                                                     onBackdropPress,
+                                                 }) => {
     return (
         <Modal
             isVisible={isVisible}
@@ -32,6 +32,9 @@ const CustomAlert: React.FC<CustomAlertProps> = ({
             useNativeDriver={true}
             hideModalContentWhileAnimating={true}
             style={styles.modal}
+            avoidKeyboard={true}
+            statusBarTranslucent={true}
+            propagateSwipe={false}
         >
             <View style={styles.alertContainer}>
                 <Text style={styles.title}>{title}</Text>
@@ -45,7 +48,14 @@ const CustomAlert: React.FC<CustomAlertProps> = ({
                                 button.style === 'cancel' && styles.cancelButton,
                                 button.style === 'destructive' && styles.destructiveButton,
                             ]}
-                            onPress={button.onPress}
+                            activeOpacity={0.6}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            onPress={() => {
+                                onBackdropPress();
+                                setTimeout(() => {
+                                    button.onPress();
+                                }, 150);
+                            }}
                         >
                             <Text
                                 style={[
@@ -76,6 +86,11 @@ const styles = StyleSheet.create({
         padding: 20,
         width: '80%',
         maxWidth: 400,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
     },
     title: {
         fontSize: 18,
@@ -91,12 +106,18 @@ const styles = StyleSheet.create({
     buttonContainer: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
+        marginTop: 10,
+        marginBottom: 5,
     },
     button: {
-        paddingVertical: 10,
-        paddingHorizontal: 15,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
         marginLeft: 10,
-        borderRadius: 5,
+        borderRadius: 8,
+        minWidth: 80,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.1)',
     },
     cancelButton: {
         backgroundColor: '#f0f0f0',

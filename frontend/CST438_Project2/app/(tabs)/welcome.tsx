@@ -89,9 +89,11 @@ export default function WelcomeScreen() {
 
   const handleLogout = async () => {
     try {
-      await AsyncStorage.removeItem('jwtToken');
-      await AsyncStorage.removeItem('username');
-      await AsyncStorage.removeItem('userId');
+      await Promise.all([
+        AsyncStorage.removeItem('jwtToken'),
+        AsyncStorage.removeItem('username'),
+        AsyncStorage.removeItem('userId')
+      ]);
       router.replace('/(tabs)/login');
     } catch (error) {
       console.error('Error during logout:', error);
