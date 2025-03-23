@@ -10,24 +10,24 @@ interface TierRowProps {
 
 const TierRow: React.FC<TierRowProps> = ({ tierName, tierColor, items }) => {
   return (
-    <View style={[styles.tierRow, { backgroundColor: tierColor }]}>
-      <View style={styles.tierLabel}>
-        <Text style={styles.tierName}>{tierName}</Text>
+      <View style={[styles.tierRow, { backgroundColor: tierColor }]}>
+        <View style={styles.tierLabel}>
+          <Text style={styles.tierName}>{tierName}</Text>
+        </View>
+        <ScrollView horizontal style={styles.itemsContainer} showsHorizontalScrollIndicator={false}>
+          {items.length > 0 ? (
+              items.map((item) => (
+                  <View key={item.id} style={styles.item}>
+                    <Text style={styles.itemText}>{item.name}</Text>
+                  </View>
+              ))
+          ) : (
+              <View style={styles.emptyTier}>
+                <Text style={styles.emptyTierText}>No items</Text>
+              </View>
+          )}
+        </ScrollView>
       </View>
-      <ScrollView horizontal style={styles.itemsContainer} showsHorizontalScrollIndicator={false}>
-        {items.length > 0 ? (
-          items.map((item) => (
-            <View key={item.id} style={styles.item}>
-              <Text style={styles.itemText}>{item.name}</Text>
-            </View>
-          ))
-        ) : (
-          <View style={styles.emptyTier}>
-            <Text style={styles.emptyTierText}>No items</Text>
-          </View>
-        )}
-      </ScrollView>
-    </View>
   );
 };
 
@@ -43,12 +43,12 @@ const CompactTierlistView: React.FC<CompactTierlistViewProps> = ({ tierlistId, j
 
   // Standard tiers with fixed order
   const standardTiers = [
-    { id: 1, name: 'S', color: TIER_COLORS['S'] },
-    { id: 2, name: 'A', color: TIER_COLORS['A'] },
-    { id: 3, name: 'B', color: TIER_COLORS['B'] },
-    { id: 4, name: 'C', color: TIER_COLORS['C'] },
-    { id: 5, name: 'D', color: TIER_COLORS['D'] },
-    { id: 6, name: 'E', color: TIER_COLORS['E'] },
+    { id: 1, name: 'S+', color: TIER_COLORS['S+'] },
+    { id: 2, name: 'S', color: TIER_COLORS['S'] },
+    { id: 3, name: 'A', color: TIER_COLORS['A'] },
+    { id: 4, name: 'B', color: TIER_COLORS['B'] },
+    { id: 5, name: 'C', color: TIER_COLORS['C'] },
+    { id: 6, name: 'D', color: TIER_COLORS['D'] },
     { id: 7, name: 'F', color: TIER_COLORS['F'] }
   ];
 
@@ -105,32 +105,32 @@ const CompactTierlistView: React.FC<CompactTierlistViewProps> = ({ tierlistId, j
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="small" color="#4da6ff" />
-        <Text style={styles.loadingText}>Loading tierlist...</Text>
-      </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color="#4da6ff" />
+          <Text style={styles.loadingText}>Loading tierlist...</Text>
+        </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error}</Text>
-      </View>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {standardTiers.map((tier) => (
-        <TierRow
-          key={tier.id}
-          tierName={tier.name}
-          tierColor={tier.color}
-          items={tierItems[tier.name] || []}
-        />
-      ))}
-    </View>
+      <View style={styles.container}>
+        {standardTiers.map((tier) => (
+            <TierRow
+                key={tier.id}
+                tierName={tier.name}
+                tierColor={tier.color}
+                items={tierItems[tier.name] || []}
+            />
+        ))}
+      </View>
   );
 };
 
