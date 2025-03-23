@@ -1,93 +1,84 @@
 package com.team9.tierlist.filters;
 
-import com.team9.tierlist.utils.JwtTokenUtil;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebFilter;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.stereotype.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
-@WebFilter
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import com.team9.tierlist.utils.JwtTokenUtil;
+
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthFilter.class);
-    public final JwtTokenUtil jwtTokenUtil;
-    private final UserDetailsService userDetailsService;
 
-    public JwtAuthFilter(JwtTokenUtil jwtTokenUtil, UserDetailsService userDetailsService) {
-        this.jwtTokenUtil = jwtTokenUtil;
-        this.userDetailsService = userDetailsService;
-    }
+    @Autowired
+    private UserDetailsService userDetailsService;
+
+    @Autowired
+    private JwtTokenUtil jwtTokenUtil;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
 
-        final String path = request.getServletPath();
+        final String requestTokenHeader = request.getHeader("Authorization");
 
-        // Add debug logging for all requests
-        logger.debug("Request path: {}, Method: {}", path, request.getMethod());
+        String username = null;
+        String jwtToken = null;
 
-        // Skip filter for auth endpoints
-        if (path.startsWith("/auth/login") || path.startsWith("/auth/register") ||
-                path.startsWith("/auth/logout") || path.startsWith("/auth/debug-complete")) {
-            logger.debug("Skipping JWT filter for auth endpoint: {}", path);
-            filterChain.doFilter(request, response);
-            return;
+        
+        if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
+            jwtToken = requestTokenHeader.substring(7);
+            try {
+                username = jwtTokenUtil.extractUsername(jwtToken);
+            } catch (Exception e) {
+                logger.error("Unable to get JWT Token or token expired", e);
+            }
+        } else {
+            logger.debug("JWT Token does not begin with Bearer String or is missing");
         }
 
-        try {
-            String authorizationHeader = request.getHeader("Authorization");
-            logger.debug("Authorization header: {}", authorizationHeader != null ?
-                    (authorizationHeader.length() > 10 ? authorizationHeader.substring(0, 10) + "..." : authorizationHeader) : "null");
+        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            if(authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-                logger.debug("No Bearer token found, continuing filter chain");
-                filterChain.doFilter(request, response);
-                return;
-            }
+            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
-            String jwtToken = authorizationHeader.substring(7);
-            String username = jwtTokenUtil.extractUsername(jwtToken);
-            logger.debug("Extracted username from token: {}", username);
-
-            if(username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
-                logger.debug("Loaded UserDetails for: {}, authorities: {}", username, userDetails.getAuthorities());
-
+            // If token is valid configure Spring Security to manually set authentication
+            try {
+                
                 if (jwtTokenUtil.validateToken(jwtToken, userDetails)) {
-                    UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            userDetails.getAuthorities()
-                    );
-
-                    authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-
-                    logger.debug("Successfully authenticated user: {}, authorities: {}",
-                            username, userDetails.getAuthorities());
+                    UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+                    
+                    usernamePasswordAuthenticationToken
+                            .setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+    
+                    SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+                    
+                    logger.debug("Authentication successful for user: {}", username);
                 } else {
-                    logger.debug("Token validation failed for user: {}", username);
+                    // This is where tokens that are blacklisted will be rejected
+                    if (jwtTokenUtil.isTokenBlacklisted(jwtToken)) {
+                        logger.warn("Attempt to use blacklisted token for user: {}", username);
+                    }
                 }
+            } catch (Exception e) {
+                logger.error("Error during token validation", e);
             }
-
-            filterChain.doFilter(request, response);
-        } catch (Exception e) {
-            logger.error("JWT Authentication error: {}", e.getMessage());
-            // Continue the filter chain even if authentication fails to avoid blocking the response
-            filterChain.doFilter(request, response);
         }
+        chain.doFilter(request, response);
     }
 }

@@ -20,7 +20,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
-import java.util.Collections;
 
 @Configuration
 @EnableWebSecurity
@@ -42,7 +41,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()  // Allow all /auth endpoints
-                        .requestMatchers("/api/users/all").hasAuthority("ROLE_ADMIN")  // Admin-only endpoints
+                        .requestMatchers("/api/users/isAdmin").permitAll()  // Allow /api/users/isAdmin
+                        .requestMatchers("/api/users/all").hasAuthority("ADMIN")  // Admin-only endpoints
                         .requestMatchers("/api/**").authenticated()  // All other API endpoints require auth
                         .anyRequest().authenticated()
                 )
