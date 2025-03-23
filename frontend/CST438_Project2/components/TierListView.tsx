@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     publicStatus: {
-        backgroundColor: '#32CD32',
+        backgroundColor: '#8BC34A',
         color: 'white',
     },
     privateStatus: {

@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
     },
     publicBadge: {
-        backgroundColor: '#32CD32',
+        backgroundColor: '#8BC34A',
         paddingVertical: 4,
         paddingHorizontal: 8,
         borderRadius: 4,
