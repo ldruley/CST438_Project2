@@ -16,7 +16,7 @@ interface CustomInputProps {
     placeholder: string;
     value: string;
     onChangeText: (text: string) => void;
-    secureTextEntry?: boolean; //the "hidden" text for password
+    secureTextEntry?: boolean;
 }
 
 const CustomInput: React.FC<CustomInputProps> = ({ placeholder, value, onChangeText, secureTextEntry = false }) => {
@@ -38,18 +38,21 @@ const CustomInput: React.FC<CustomInputProps> = ({ placeholder, value, onChangeT
 
 
 export default function TabTwoScreen() {
+    //todo, reminder for isAdmin page switch
     //for debugging.hide this and show the usestate ver when not debugging (under trees for ctrl +f)
-    const isAdmin =true;
+    // const isAdmin =true;
 
     //for user to change name/pass
     const[userName,setUsername]= useState('');
     const[newUserName,setNewUsername]= useState('');
+    const[nameChangeCon,setNameChangeCon]=useState('');
     const [newPassword,setNewPassword] = useState('');
     const [password2,setPassword2]= useState('');
+    const[passChangeCon,setPassChangeCon]=useState('');
     // const [oldPass, setOldPass]= useState('');
     const [email,setEmail]= useState('');
     //trees
-    // const [isAdmin,setAdmin]= useState(false)
+    const [isAdmin,setAdmin]= useState(false)
     //for Admin stuff
     //create user
     const[createUserName,setCreateUsername]= useState('');
@@ -58,7 +61,7 @@ export default function TabTwoScreen() {
     const [createTextCon,setCreateTextCon]=useState('');
     //delete user var
     const[delUserId,setDelUserId]=useState('');
-    const [matches, setMatches] = useState(null);
+    const [matches, setMatches] = useState(false);
     //edit user var
     const[editUserId,setEditUserId] = useState('');
     const[editName,setEditName]=useState('');
@@ -119,14 +122,14 @@ export default function TabTwoScreen() {
                 try {
                     console.log('Fetching authentication data from AsyncStorage...');
                     const token = await AsyncStorage.getItem('jwtToken');
-                    const userId = await AsyncStorage.getItem('userId'); // Ensure we have user ID
+                    const userId = await AsyncStorage.getItem('userId');
 
                     console.log(`Token exists: ${!!token}, User ID exists: ${!!userId}`);
 
                     if (token && userId) {
                         setJwtToken(token);
 
-                        // Fetch user details from the API
+
                         const userResponse = await fetch(`http://localhost:8080/api/users/${userId}`, {
                             method: 'GET',
                             headers: {
@@ -142,17 +145,17 @@ export default function TabTwoScreen() {
                         const userData = await userResponse.json();
                         console.log('Fetched user data:', userData);
 
-                        // Store user data in state
+
                         setUserId(userData.id);
                         setUsername(userData.username);
                         setEmail(userData.email);
                         // setOldPass(userData.password);
                         //trees
-                        // setAdmin(userData.isAdmin);
+                        setAdmin(userData.isAdmin);
 
 
 
-                        // Store in AsyncStorage (optional, if needed elsewhere)
+
                         await AsyncStorage.setItem('username', userData.username);
                         await AsyncStorage.setItem('email', userData.email);
 
@@ -182,19 +185,19 @@ export default function TabTwoScreen() {
 
     //current user methods, all these should refer to logged in user
     const handleConfirmName = async () =>{
-        //call back end: updateUser
-        //check username slot filled, check if it exists, then change userName
+
+
         if(!userName){
             console.log("input new userName!");
         }
         else{
-            //check username vs db?
+
             const edited_user={
                 username:newUserName,
 
             };
             try{
-
+                //TODO- works, but token is lost after execution?. so u gotta log back in? (can cause dupe names...)
                 const response = await fetch(`http://localhost:8080/api/users/${userId}`,{
                     method:"PATCH",
                     headers:{
@@ -208,6 +211,8 @@ export default function TabTwoScreen() {
                 if (response.ok){
                     console.log("User edited (username)");
                     // resetFields()
+                    router.replace("http://localhost:8081/user")
+                    setNameChangeCon('Name changed!')
                 }
                 else{
                     console.log("failed to edit user")
@@ -223,8 +228,7 @@ export default function TabTwoScreen() {
 
     }
     const handleConfirmPass = async ()=>{
-        //call back end: updateUser
-        //check if the 2 match, then update password
+
         if(!newPassword && !password2){
             // if both empty
             console.log("empty both!");
@@ -255,22 +259,23 @@ export default function TabTwoScreen() {
 
                     if (response.ok) {
                         console.log('Password changed successfully:', data);
-                        // Optionally, inform the user with a success message
+                        setPassChangeCon("Password changed!")
                     } else {
                         console.error('Failed to change password:', data);
-                        // Handle error case, inform the user about failure
+
                     }
                 } catch (error) {
                     console.error('Error changing password:', error);
-                    // Handle network or other errors
+
                 }
             }
-
+            router.replace("http://localhost:8081/user")
         }
+
     }
 
     const handleDelete = async ()=>{
-        //call back end: deleteUser
+
         console.log("GoodBye! :(");
 
         // router.push("/home");
@@ -300,7 +305,8 @@ export default function TabTwoScreen() {
         }
     }
     //----admin methods----
-    //TODO all of these need the admin ver (idk how admin gets other user tokens)
+    //TODO all of these need the admin ver (idk how admin gets other user tokens) (create is fine though)
+
     //admin methods - admin can choose who to create. can admin delete self?
     const fetchUsers = async () => {
         try {
@@ -320,7 +326,7 @@ export default function TabTwoScreen() {
             }
 
             const data = await response.json();
-            console.log("Fetched Users:", data); // Print to console
+            console.log("Fetched Users:", data);
             setData(data); // Store in state
             console.log("Updated Data:", data);
         } catch (error) {
@@ -368,23 +374,11 @@ export default function TabTwoScreen() {
 
             console.log("Account created successfully");
 
-            // Set success message BEFORE alert
+
             setCreateTextCon(`User: ${createUserName} created!`);
 
-            // Delay for better UI update
-            setTimeout(() => {
-                Alert.alert("Success", "Account has been created.", [
-                    {
-                        text: "OK",
-                        onPress: () => {
-                            setIsLoading(false);
-                            setCreateUsername('');
-                            setCreateEmail('');
-                            setCreatePassword('');
-                        }
-                    }
-                ]);
-            }, 100);
+
+
 
         } catch (err) {
             console.error('Error during account creation:', err);
@@ -464,7 +458,36 @@ export default function TabTwoScreen() {
 
 
     }
+    const handlePasswordCheck = async () => {
+        try {
+            const response = await fetch(`http://localhost:8080/auth/test-user-password?username=${userName}&password=${warnPass}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${jwtToken}`,
+                    "Content-Type": "application/json",
+                    'Accept': 'application/json'
 
+
+                },
+                mode: "cors",
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                if (data.passwordMatches) {
+                    console.log('Password matches!');
+                    setMatches(data.passwordMatches);
+                } else {
+                    console.error('Password does not match');
+                }
+            } else {
+                console.error('Failed to check password:', data);
+            }
+        } catch (error) {
+            console.error('Error checking password:', error);
+        }
+    };
 
 
 
@@ -490,6 +513,7 @@ export default function TabTwoScreen() {
                     <TouchableOpacity style={styles.button} >
                         <Text style={styles.buttonText} onPress={handleConfirmName}>Confirm Name Change</Text>
                     </TouchableOpacity>
+                    {nameChangeCon ? <Text style={styles.createCon}>{nameChangeCon}</Text> : null}
                 </View>
 
                 <View style={styles.overlay}>
@@ -500,6 +524,7 @@ export default function TabTwoScreen() {
                     <TouchableOpacity style={styles.button} >
                         <Text style={styles.buttonText} onPress={handleConfirmPass}>Confirm Password Change</Text>
                     </TouchableOpacity>
+                    {passChangeCon ? <Text style={styles.createCon}>{passChangeCon}</Text> : null}
                 </View>
 
 
@@ -531,7 +556,9 @@ export default function TabTwoScreen() {
                                 color="#e74c3c"
                                 title={"Confirm"}
                                 onPress={async () => {
-                                    //TODO- compare input w/ current password (auth?)
+                                    await handlePasswordCheck();
+
+                                    // works but has to be clicked twice
                                     if (matches) {
                                         await handleDelete();
                                         setUserModalVisible(false);
@@ -575,7 +602,6 @@ export default function TabTwoScreen() {
 
                         <View style={styles.overlay}>
 
-
                             <CustomInput placeholder={"Username"} value={createUserName} onChangeText={setCreateUsername}/>
                             <CustomInput placeholder={"Password"} value={createPassword} onChangeText={setCreatePassword}/>
                             <CustomInput placeholder={"Set Email"} value={createEmail} onChangeText={setCreateEmail}/>
@@ -585,8 +611,6 @@ export default function TabTwoScreen() {
                             </TouchableOpacity>
 
                                 {createTextCon ? <Text style={styles.createCon}>{createTextCon}</Text> : null}
-
-
 
                         </View>
 
