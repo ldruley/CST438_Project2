@@ -48,7 +48,7 @@ function ExpandableMenuHeader() {
   // Enhanced logout handler with better error handling and UI feedback
   const handleLogout = () => {
     // First trigger navigation
-    router.replace('/login');
+    router.replace('/');
     
     // Then clear storage and do server logout
     setTimeout(() => {
