@@ -26,11 +26,11 @@ const LandingPage = () => {
         <Text style={styles.greeting}>Hello {username}!</Text>
         <Text style={styles.listText}>Current Active List: {activeList}</Text>
         
-        <TouchableOpacity style={styles.button} onPress={() => router.push('/userTierLists')}>
+        <TouchableOpacity style={styles.button} onPress={() => router.push('/(tabs)/public-tierlists')}>
           <Text style={styles.buttonText}>See All Lists</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.button} onPress={() => router.push('/welcome')}>
+        <TouchableOpacity style={styles.button} onPress={() => router.push('/public-tierlists')}>
           <Text style={styles.buttonText}>View Public Lists</Text>
         </TouchableOpacity>
         

@@ -374,11 +374,12 @@ const handleDeleteAccount = () => {
                   <Text style={styles.label}>Username:</Text>
                   <Text style={styles.value}>{userData?.username}</Text>
                 </View>
-                
+              
                 <View style={styles.infoRow}>
                   <Text style={styles.label}>Email:</Text>
                   <Text style={styles.value}>{userData?.email}</Text>
                 </View>
+
                 
                 <Button title="Edit Profile" onPress={() => setIsEditing(true)} />
               </>
@@ -453,13 +454,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   profileContainer: {
-    width: '90%',
+    width: '50%',
     padding: 20,
     borderRadius: 10,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   title: {
-    fontSize: 24,
+    fontSize: 36,
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 20,
@@ -470,26 +471,33 @@ const styles = StyleSheet.create({
     padding: 15,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 8,
+    width: '60%',
+    alignSelf: 'center', 
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 25,
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 15,
   },
+
   label: {
     color: '#dddddd',
     marginBottom: 5,
     fontWeight: '500',
+    fontSize: 18,
   },
   value: {
     color: 'white',
     marginBottom: 10,
+    fontSize: 18,
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 1,
+    
+    
   },
   input: {
     backgroundColor: 'white',

@@ -4,7 +4,6 @@ import com.team9.tierlist.filters.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -21,9 +20,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
-import java.util.Collections;
-
-import com.team9.tierlist.filters.JwtAuthFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -45,7 +41,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()  // Allow all /auth endpoints
-                        .requestMatchers("/api/users/all").hasAuthority("ROLE_ADMIN")  // Admin-only endpoints
+                        .requestMatchers("/api/users/isAdmin").permitAll()  // Allow /api/users/isAdmin
+                        .requestMatchers("/api/users/all").hasAuthority("ADMIN")  // Admin-only endpoints
                         .requestMatchers("/api/**").authenticated()  // All other API endpoints require auth
                         .anyRequest().authenticated()
                 )

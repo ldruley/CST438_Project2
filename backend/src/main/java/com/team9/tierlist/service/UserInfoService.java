@@ -40,7 +40,7 @@ public class UserInfoService implements UserDetailsService {
         logger.info("UserInfoService: User found: " + user.getUsername());
          UserDetails userDetails = org.springframework.security.core.userdetails.User.withUsername(user.getUsername())
             .password(user.getPassword())
-            .authorities(Collections.singletonList(new SimpleGrantedAuthority(user.isAdmin() ? "ROLE_ADMIN" : "ROLE_USER")))
+            .authorities(Collections.singletonList(new SimpleGrantedAuthority(user.isAdmin() ? "ADMIN" : "ROLE_USER")))
             .build();
     
     logger.info("UserInfoService: Created UserDetails with authorities: {}", userDetails.getAuthorities());

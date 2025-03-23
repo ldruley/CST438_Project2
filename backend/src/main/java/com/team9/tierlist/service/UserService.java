@@ -246,6 +246,35 @@ public boolean updatePassword(Long id, String currentPassword, String newPasswor
     }
 }
 
+/**
+ * Resets a user's password without requiring current password verification
+ * This method should only be called by admins
+ * 
+ * @param id The user ID
+ * @param newPassword The new password to set
+ * @return true if password was reset successfully, false otherwise
+ */
+@Transactional
+public boolean resetPassword(Long id, String newPassword) {
+    Optional<User> userOpt = getUserById(id);
+    
+    if (userOpt.isEmpty()) {
+        return false;
+    }
+    
+    User user = userOpt.get();
+    
+    // Set new password (encode it first)
+    user.setPassword(passwordEncoder.encode(newPassword));
+    
+    // Save user
+    try {
+        userRepository.save(user);
+        return true;
+    } catch (Exception e) {
+        return false;
+    }
+}
     
         /**
      * Logs out a user.
