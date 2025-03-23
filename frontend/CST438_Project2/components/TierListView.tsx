@@ -337,7 +337,7 @@ const TierlistView: React.FC = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingHorizontal: 24, // Increased horizontal padding for the entire view
+        paddingHorizontal: 24,
     },
     loadingContainer: {
         flex: 1,

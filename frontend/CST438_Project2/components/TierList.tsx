@@ -13,7 +13,6 @@ interface TierListProps {
     onTierNameChange?: (tierId: number, name: string) => void;
 }
 
-// TierList component with integrated alert functionality
 const TierList: React.FC<TierListProps> = ({
                                                tiers,
                                                items = {},

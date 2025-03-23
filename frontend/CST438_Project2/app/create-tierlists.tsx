@@ -26,7 +26,6 @@ const CreateTierlistContent: React.FC = () => {
     const [isPublic, setIsPublic] = useState(false);
     const [makeActive, setMakeActive] = useState(true); // Default to setting as active
     const [hasActiveTierlist, setHasActiveTierlist] = useState(false);
-    // Predefined tiers with standard mapping
     const [tiers] = useState<Tier[]>([
         { id: 1, name: 'S+', color: TIER_COLORS['S+'] },
         { id: 2, name: 'S', color: TIER_COLORS['S'] },

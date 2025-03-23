@@ -64,7 +64,6 @@ const CompactTierlistView: React.FC<CompactTierlistViewProps> = ({ tierlistId, j
     setAlertVisible(true);
   };
 
-  // Standard tiers with fixed order
   const standardTiers = [
     { id: 1, name: 'S+', color: TIER_COLORS['S+'] },
     { id: 2, name: 'S', color: TIER_COLORS['S'] },

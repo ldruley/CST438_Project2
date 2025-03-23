@@ -78,11 +78,8 @@ const TierlistCard: React.FC<TierlistCardProps> = ({
                                                        onSetActive,
                                                        onEdit
                                                    }) => {
-    // Get count of items per tier
     const itemCounts = countItemsPerTier(tierlist);
-    // Get total items count
     const totalItems = tierlist.items?.length || 0;
-    // Check if the current user owns this tierlist
     const isOwner = userId && tierlist.user && tierlist.user.id === userId;
 
     return (
@@ -138,7 +135,6 @@ const TierlistCard: React.FC<TierlistCardProps> = ({
                     <Text style={styles.createdDate}>Created: {formatRelativeTime(tierlist.createdDate)}</Text>
                 )}
                 <View style={styles.buttonGroup}>
-                    {/* Show edit button only if the current user owns this tierlist */}
                     {isOwner && onEdit && (
                         <TouchableOpacity
                             style={styles.editButton}
