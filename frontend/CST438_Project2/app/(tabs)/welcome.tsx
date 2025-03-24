@@ -5,6 +5,7 @@ import {useFocusEffect, useRouter} from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Tierlist } from '@/types/tierlist';
 import CompactTierlistView from '@/components/CompactTierlistView';
+import { MaterialIcons } from '@expo/vector-icons';
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function WelcomeScreen() {
   const [userId, setUserId] = useState<number | null>(null);
   const [jwtToken, setJwtToken] = useState<string | null>(null);
   const [activeTierlist, setActiveTierlist] = useState<Tierlist | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   useFocusEffect(
       useCallback(() => {
@@ -21,7 +23,7 @@ export default function WelcomeScreen() {
             const token = await AsyncStorage.getItem('jwtToken');
             const storedUsername = await AsyncStorage.getItem('username');
             const storedUserId = await AsyncStorage.getItem('userId');
-
+            
             if (!token || !storedUserId) {
               console.log('No auth token or user ID found, redirecting to login');
               router.replace('/(tabs)/login');
@@ -31,7 +33,9 @@ export default function WelcomeScreen() {
             setJwtToken(token);
             setUsername(storedUsername || 'User');
             setUserId(parseInt(storedUserId));
-
+            
+            // Check user's admin status directly from the API
+            await checkAdminStatus(token);
             await fetchActiveTierlist(token, parseInt(storedUserId));
           } catch (error) {
             console.error('Error checking auth status:', error);
@@ -45,6 +49,34 @@ export default function WelcomeScreen() {
         checkAuthStatus();
       }, [])
   );
+
+  const checkAdminStatus = async (token: string) => {
+    try {
+      console.log("Checking admin status...");
+      
+      const response = await fetch('http://localhost:8080/api/users/isAdmin', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Admin status response:", data);
+        setIsAdmin(data.isAdmin === true);
+        
+        // Save admin status to AsyncStorage for future use
+        await AsyncStorage.setItem('isAdmin', data.isAdmin ? 'true' : 'false');
+      } else {
+        console.log("Failed to check admin status, response:", response.status);
+        setIsAdmin(false);
+      }
+    } catch (err) {
+      console.error("Error checking admin status:", err);
+      setIsAdmin(false);
+    }
+  };
 
   const handleCreateTierlist = () => {
     router.push('/create-tierlists');
@@ -96,7 +128,8 @@ export default function WelcomeScreen() {
       await Promise.all([
         AsyncStorage.removeItem('jwtToken'),
         AsyncStorage.removeItem('username'),
-        AsyncStorage.removeItem('userId')
+        AsyncStorage.removeItem('userId'),
+        AsyncStorage.removeItem('isAdmin')
       ]);
       router.replace('/(tabs)/login');
     } catch (error) {
@@ -124,12 +157,28 @@ export default function WelcomeScreen() {
             >
               <Text style={styles.headerButtonText}>+ Create New</Text>
             </TouchableOpacity>
-          <TouchableOpacity
-              style={[styles.headerButton, styles.publicButton]}
-              onPress={() => router.push('/public-tierlists')}
-          >
-            <Text style={styles.headerButtonText}>Public Lists</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+                style={[styles.headerButton, styles.publicButton]}
+                onPress={() => router.push('/public-tierlists')}
+            >
+              <Text style={styles.headerButtonText}>Public Lists</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={[styles.headerButton, styles.profileButton]}
+                onPress={() => router.push('/userProfile')}
+            >
+              <MaterialIcons name="account-circle" size={18} color="white" />
+              <Text style={styles.headerButtonText}>Profile</Text>
+            </TouchableOpacity>
+            {isAdmin && (
+              <TouchableOpacity
+                  style={[styles.headerButton, styles.adminButton]}
+                  onPress={() => router.push('/admin')}
+              >
+                <MaterialIcons name="admin-panel-settings" size={18} color="white" />
+                <Text style={styles.headerButtonText}>Admin</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -279,28 +328,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   headerButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: 8,
     marginLeft: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerButtonText: {
     color: 'white',
     fontWeight: 'bold',
-
+    marginLeft: 4,
   },
   createButton: {
     backgroundColor: '#4da6ff',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  createButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
   },
   publicButton: {
     backgroundColor: '#FF9800',
+  },
+  profileButton: {
+    backgroundColor: '#8BC34A',
+  },
+  adminButton: {
+    backgroundColor: '#9c27b0',
   },
   viewButton: {
     backgroundColor: '#4da6ff',

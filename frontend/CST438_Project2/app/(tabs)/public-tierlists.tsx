@@ -7,7 +7,7 @@ export default function PublicTierlistsRoute() {
         <>
             <Stack.Screen
                 options={{
-                    headerShown: false,
+                    headerShown: true,
                 }}
             />
             <PublicTierlistsScreen />
