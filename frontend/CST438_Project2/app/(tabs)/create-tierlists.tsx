@@ -11,7 +11,7 @@ export default function CreateTierlistScreen() {
         <>
             <Stack.Screen
                 options={{
-                    headerShown: false,
+                    headerShown: true,
                 }}
             />
             <CreateTierlistContent />

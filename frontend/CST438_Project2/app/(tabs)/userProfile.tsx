@@ -22,7 +22,6 @@ interface UserData {
  * - Edit profile information
  * - Change password
  * - Delete account
- * - Log out
  */
 const UserProfile: React.FC = () => {
   // ==================== STATE MANAGEMENT ====================
@@ -472,7 +471,7 @@ const UserProfile: React.FC = () => {
    */
   if (loading) {
     return (
-      <LinearGradient colors={['#000000', '#808080']} style={styles.container}>
+      <LinearGradient colors={['#000000', '#808080']} style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#ffffff" />
         <Text style={styles.loadingText}>Loading profile...</Text>
       </LinearGradient>
@@ -498,80 +497,74 @@ const UserProfile: React.FC = () => {
    */
   return (
     <LinearGradient colors={['#000000', '#808080']} style={styles.container}>
-      {/* Header with title and logout button */}
+      {/* Header with title */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>User Profile</Text>
-        <View style={styles.headerControls}>
-          <TouchableOpacity 
-            style={styles.logoutButton} 
-            onPress={handleLogout}
-          >
-            <Text style={styles.buttonText}>Logout</Text>
-          </TouchableOpacity>
-        </View>
       </View>
       
-      {/* Main profile card */}
-      <View style={styles.userInfoContainer}>
-        <View style={styles.userCard}>
-          {/* User information section */}
-          <View style={styles.userInfo}>
-            <Text style={styles.username}>{userData?.username}</Text>
-            <Text style={styles.email}>{userData?.email}</Text>
-            <Text style={[styles.adminStatus, userData?.isAdmin ? styles.adminTrue : styles.adminFalse]}>
-              {userData?.isAdmin ? "Admin" : "Regular User"}
-            </Text>
-          </View>
-          
-          <View style={styles.divider} />
-          
-          {/* Account actions section */}
-          <Text style={styles.sectionTitle}>Account Actions</Text>
-          <View style={styles.actionButtons}>
-            {/* Edit profile button */}
-            <TouchableOpacity 
-              style={[
-                styles.actionButton, 
-                styles.editButton,
-                editButtonHovered && styles.buttonHovered
-              ]} 
-              onPress={openEditProfileModal}
-              onPressIn={() => setEditButtonHovered(true)}
-              onPressOut={() => setEditButtonHovered(false)}
-            >
-              <Text style={styles.buttonText}>Edit Profile</Text>
-            </TouchableOpacity>
+      <ScrollView style={styles.content}>
+        {/* Main profile card */}
+        <View style={styles.userInfoContainer}>
+          <View style={styles.userCard}>
+            {/* User information section */}
+            <View style={styles.userInfo}>
+              <Text style={styles.username}>{userData?.username}</Text>
+              <Text style={styles.email}>{userData?.email}</Text>
+              <Text style={[styles.adminStatus, userData?.isAdmin ? styles.adminTrue : styles.adminFalse]}>
+                {userData?.isAdmin ? "Admin" : "Regular User"}
+              </Text>
+            </View>
             
-            {/* Change password button */}
-            <TouchableOpacity 
-              style={[
-                styles.actionButton, 
-                styles.passwordButton,
-                passwordButtonHovered && styles.buttonHovered
-              ]} 
-              onPress={openChangePasswordModal}
-              onPressIn={() => setPasswordButtonHovered(true)}
-              onPressOut={() => setPasswordButtonHovered(false)}
-            >
-              <Text style={styles.buttonText}>Change Password</Text>
-            </TouchableOpacity>
+            <View style={styles.divider} />
             
-            {/* Delete account button */}
-            <TouchableOpacity 
-              style={[
-                styles.actionButton, 
-                styles.deleteButton,
-                deleteButtonHovered && styles.buttonHovered
-              ]} 
-              onPress={handleShowDeleteModal}
-              onPressIn={() => setDeleteButtonHovered(true)}
-              onPressOut={() => setDeleteButtonHovered(false)}
-            >
-              <Text style={styles.buttonText}>Delete Account</Text>
-            </TouchableOpacity>
+            {/* Account actions section */}
+            <Text style={styles.sectionTitle}>Account Actions</Text>
+            <View style={styles.actionButtons}>
+              {/* Edit profile button */}
+              <TouchableOpacity 
+                style={[
+                  styles.actionButton, 
+                  styles.editButton,
+                  editButtonHovered && styles.buttonHovered
+                ]} 
+                onPress={openEditProfileModal}
+                onPressIn={() => setEditButtonHovered(true)}
+                onPressOut={() => setEditButtonHovered(false)}
+              >
+                <Text style={styles.buttonText}>Edit Profile</Text>
+              </TouchableOpacity>
+              
+              {/* Change password button */}
+              <TouchableOpacity 
+                style={[
+                  styles.actionButton, 
+                  styles.passwordButton,
+                  passwordButtonHovered && styles.buttonHovered
+                ]} 
+                onPress={openChangePasswordModal}
+                onPressIn={() => setPasswordButtonHovered(true)}
+                onPressOut={() => setPasswordButtonHovered(false)}
+              >
+                <Text style={styles.buttonText}>Change Password</Text>
+              </TouchableOpacity>
+              
+              {/* Delete account button */}
+              <TouchableOpacity 
+                style={[
+                  styles.actionButton, 
+                  styles.deleteButton,
+                  deleteButtonHovered && styles.buttonHovered
+                ]} 
+                onPress={handleShowDeleteModal}
+                onPressIn={() => setDeleteButtonHovered(true)}
+                onPressOut={() => setDeleteButtonHovered(false)}
+              >
+                <Text style={styles.buttonText}>Delete Account</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
+      </ScrollView>
 
       {/* Edit Profile / Change Password Modal */}
       <Modal
@@ -763,42 +756,41 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  content: {
+    flex: 1,
     padding: 20,
+    paddingHorizontal: 75,
+  },
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingTop: 40,
+    paddingBottom: 20,
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#fff',
-  },
-  headerControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    color: 'white',
   },
   
   // User card and info styles
   userInfoContainer: {
-    marginHorizontal: 20,
-    marginVertical: 20,
-    maxWidth: 500,
-    alignSelf: 'center',
+    marginBottom: 24,
     width: '100%',
   },
   userCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderColor: '#4da6ff',
+    borderWidth: 2,
   },
   userInfo: {
     alignItems: 'center',
@@ -807,11 +799,12 @@ const styles = StyleSheet.create({
   username: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: 'white',
     marginBottom: 5,
   },
   email: {
     fontSize: 16,
-    color: '#666',
+    color: '#e0e0e0',
     marginBottom: 10,
   },
   adminStatus: {
@@ -822,25 +815,25 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   adminTrue: {
-    color: '#2e7d32',
-    backgroundColor: 'rgba(46, 125, 50, 0.1)',
+    color: '#ffffff',
+    backgroundColor: 'rgba(46, 125, 50, 0.4)',
   },
   adminFalse: {
-    color: '#666',
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    color: '#e0e0e0',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
 
   // Section styles
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: 'white',
     marginBottom: 15,
     marginTop: 10,
   },
   divider: {
     height: 1,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     marginVertical: 15,
     width: '100%',
   },
@@ -860,10 +853,10 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   editButton: {
-    backgroundColor: '#2196f3', // Blue
+    backgroundColor: '#4da6ff', // Blue 
   },
   passwordButton: {
-    backgroundColor: '#ff9800', // Orange
+    backgroundColor: '#FF9800', // Orange 
   },
   deleteButton: {
     backgroundColor: '#f44336', // Red
@@ -871,25 +864,16 @@ const styles = StyleSheet.create({
   buttonHovered: {
     opacity: 0.8,
     transform: [{ scale: 1.02 }],
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  logoutButton: {
-    backgroundColor: '#808080', // Gray
-    padding: 10,
-    borderRadius: 5,
   },
   buttonText: {
     color: 'white',
     fontWeight: 'bold',
+    fontSize: 16,
   },
   
   // Status indicators
   loadingText: {
-    color: '#ffffff',
+    color: 'white',
     fontSize: 18,
     marginTop: 10,
     textAlign: 'center',
@@ -909,43 +893,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: '#333',
     width: '90%',
     maxWidth: 500,
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    borderColor: '#4da6ff',
+    borderWidth: 1,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
+    color: 'white',
   },
   modalText: {
     fontSize: 16,
     marginBottom: 20,
     textAlign: 'center',
-    color: '#333',
+    color: '#e0e0e0',
   },
   modalLabel: {
     fontSize: 14,
     marginBottom: 10,
-    color: '#333',
+    color: '#e0e0e0',
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 8,
     padding: 10,
     marginBottom: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    color: 'white',
   },
   
   // Form styles
@@ -956,15 +937,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 5,
     fontWeight: '500',
+    color: '#e0e0e0',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 8,
     padding: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    color: 'white',
   },
   
-  // Modal button styles
+
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -972,7 +956,7 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     padding: 12,
-    borderRadius: 5,
+    borderRadius: 8,
     alignItems: 'center',
     flex: 1,
     marginHorizontal: 5,
@@ -981,22 +965,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#808080',
   },
   saveButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#4da6ff', 
   },
   confirmDeleteButton: {
     backgroundColor: '#f44336',
   },
   disabledButton: {
-    backgroundColor: '#ffcccc',
+    backgroundColor: '#555',
     opacity: 0.7,
   },
   
-  // Generic button style
+
   button: {
     padding: 12,
-    borderRadius: 5,
+    borderRadius: 8,
     alignItems: 'center',
-    backgroundColor: '#2196f3',
+    backgroundColor: '#4da6ff', 
     marginTop: 20,
     width: 200,
     alignSelf: 'center',

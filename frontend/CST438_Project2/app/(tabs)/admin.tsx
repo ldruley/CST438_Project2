@@ -488,20 +488,22 @@ export default function AdminScreen() {
   // Get the final sorted and filtered users
   const displayUsers = getSortedAndFilteredUsers();
 
-  return (
-    <LinearGradient colors={["#000000", "#808080"]} style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Admin Panel: User Management</Text>
-        <View style={styles.headerControls}>
-          <TouchableOpacity 
-            style={styles.createButton} 
-            onPress={openCreateModal}
-          >
-            <Text style={styles.createButtonText}>+ Create New User</Text>
-          </TouchableOpacity>
-        </View>
+  // Main render for AdminScreen
+return (
+  <LinearGradient colors={["#000000", "#808080"]} style={styles.container}>
+    <View style={styles.header}>
+      <Text style={styles.headerTitle}>Admin Panel: User Management</Text>
+      <View style={styles.headerControls}>
+        <TouchableOpacity 
+          style={styles.createButton} 
+          onPress={openCreateModal}
+        >
+          <Text style={styles.buttonText}>+ Create New User</Text>
+        </TouchableOpacity>
       </View>
+    </View>
 
+    <View style={styles.content}>
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBarWrapper}>
@@ -510,7 +512,7 @@ export default function AdminScreen() {
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search by username or email"
-            placeholderTextColor="#aaa"
+            placeholderTextColor="#e0e0e0"
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity style={styles.clearButton} onPress={clearSearch}>
@@ -599,431 +601,511 @@ export default function AdminScreen() {
           ))
         )}
       </ScrollView>
+    </View>
 
-      {/* User Modal (Create/Edit/View) */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              {modalMode === 'create' 
-                ? 'Create New User' 
-                : modalMode === 'edit' 
-                  ? 'Edit User' 
-                  : 'User Details'}
-            </Text>
+    {/* User Modal (Create/Edit/View) */}
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={modalVisible}
+      onRequestClose={() => setModalVisible(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>
+            {modalMode === 'create' 
+              ? 'Create New User' 
+              : modalMode === 'edit' 
+                ? 'Edit User' 
+                : 'User Details'}
+          </Text>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Username:</Text>
-              <TextInput
-                style={styles.input}
-                value={username}
-                onChangeText={setUsername}
-                placeholder="Enter username"
-                editable={modalMode !== 'view'}
-              />
-            </View>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Email:</Text>
-              <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="Enter email"
-                editable={modalMode !== 'view'}
-              />
-            </View>
-
-            {modalMode !== 'view' && (
-              <>
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>
-                    {modalMode === 'create' ? 'Password:' : 'New Password (leave blank to keep current):'}
-                  </Text>
-                  <TextInput
-                    style={styles.input}
-                    value={password}
-                    onChangeText={handlePasswordChange}
-                    placeholder={modalMode === 'create' ? "Enter password" : "Enter new password (optional)"}
-                    secureTextEntry
-                  />
-                  {passwordError ? (
-                    <Text style={styles.passwordError}>{passwordError}</Text>
-                  ) : (
-                    <Text style={styles.passwordHint}>
-                      Password must have at least 6 characters, include letters, numbers, and a special character.
-                    </Text>
-                  )}
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Confirm Password:</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    placeholder="Confirm password"
-                    secureTextEntry
-                  />
-                </View>
-              </>
-            )}
-
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Admin Privileges:</Text>
-              <Switch
-                value={userIsAdmin}
-                onValueChange={setUserIsAdmin}
-                disabled={modalMode === 'view'}
-              />
-            </View>
-
-            <View style={styles.modalButtons}>
-              <Button title="Close" onPress={() => setModalVisible(false)} />
-              
-              {modalMode === 'create' && (
-                <Button title="Create User" onPress={handleCreateUser} />
-              )}
-              
-              {modalMode === 'edit' && (
-                <Button title="Save Changes" onPress={handleUpdateUser} />
-              )}
-              
-              {modalMode === 'view' && (
-                <Button title="Edit" onPress={() => setModalMode('edit')} />
-              )}
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Delete confirmation modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={deleteModalVisible}
-        onRequestClose={() => setDeleteModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Delete User</Text>
-            
-            <Text style={styles.modalText}>
-              Are you sure you want to delete user "{userToDelete?.username}"?
-              This action cannot be undone. All user data will be permanently deleted.
-            </Text>
-            
-            <Text style={styles.modalLabel}>
-              Please type the username "{userToDelete?.username}" to confirm:
-            </Text>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Username:</Text>
             <TextInput
-              style={styles.modalInput}
-              value={deleteConfirmText}
-              onChangeText={setDeleteConfirmText}
-              placeholder="Enter username to confirm"
+              style={styles.input}
+              value={username}
+              onChangeText={setUsername}
+              placeholder="Enter username"
               placeholderTextColor="#999"
-              autoCapitalize="none"
+              editable={modalMode !== 'view'}
             />
-            
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setDeleteModalVisible(false)}
-                disabled={isDeleting}
-              >
-                <Text style={styles.buttonText}>Cancel</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[
-                  styles.modalButton, 
-                  styles.confirmDeleteButton,
-                  deleteConfirmText !== userToDelete?.username ? styles.disabledButton : null
-                ]}
-                onPress={handleDeleteUser}
-                disabled={isDeleting || deleteConfirmText !== userToDelete?.username}
-              >
-                <Text style={styles.buttonText}>
-                  {isDeleting ? 'Deleting...' : 'Delete User'}
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Email:</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Enter email"
+              placeholderTextColor="#999"
+              editable={modalMode !== 'view'}
+            />
+          </View>
+
+          {modalMode !== 'view' && (
+            <>
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>
+                  {modalMode === 'create' ? 'Password:' : 'New Password (leave blank to keep current):'}
                 </Text>
+                <TextInput
+                  style={styles.input}
+                  value={password}
+                  onChangeText={handlePasswordChange}
+                  placeholder={modalMode === 'create' ? "Enter password" : "Enter new password (optional)"}
+                  placeholderTextColor="#999"
+                  secureTextEntry
+                />
+                {passwordError ? (
+                  <Text style={styles.passwordError}>{passwordError}</Text>
+                ) : (
+                  <Text style={styles.passwordHint}>
+                    Password must have at least 6 characters, include letters, numbers, and a special character.
+                  </Text>
+                )}
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Confirm Password:</Text>
+                <TextInput
+                  style={styles.input}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="Confirm password"
+                  placeholderTextColor="#999"
+                  secureTextEntry
+                />
+              </View>
+            </>
+          )}
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Admin Privileges:</Text>
+            <Switch
+              value={userIsAdmin}
+              onValueChange={setUserIsAdmin}
+              disabled={modalMode === 'view'}
+              trackColor={{ false: "#767577", true: "#4da6ff" }}
+              thumbColor={userIsAdmin ? "#ffffff" : "#f4f3f4"}
+            />
+          </View>
+
+          <View style={styles.modalButtons}>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.cancelButton]}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.buttonText}>Close</Text>
+            </TouchableOpacity>
+            
+            {modalMode === 'create' && (
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
+                onPress={handleCreateUser}
+              >
+                <Text style={styles.buttonText}>Create User</Text>
               </TouchableOpacity>
-            </View>
+            )}
+            
+            {modalMode === 'edit' && (
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
+                onPress={handleUpdateUser}
+              >
+                <Text style={styles.buttonText}>Save Changes</Text>
+              </TouchableOpacity>
+            )}
+            
+            {modalMode === 'view' && (
+              <TouchableOpacity
+                style={[styles.modalButton, styles.editButton]}
+                onPress={() => setModalMode('edit')}
+              >
+                <Text style={styles.buttonText}>Edit</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
-      </Modal>
-    </LinearGradient>
-  );
+      </View>
+    </Modal>
+
+    {/* Delete confirmation modal */}
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={deleteModalVisible}
+      onRequestClose={() => setDeleteModalVisible(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Delete User</Text>
+          
+          <Text style={styles.modalText}>
+            Are you sure you want to delete user "{userToDelete?.username}"?
+            This action cannot be undone. All user data will be permanently deleted.
+          </Text>
+          
+          <Text style={styles.modalLabel}>
+            Please type the username "{userToDelete?.username}" to confirm:
+          </Text>
+          <TextInput
+            style={styles.modalInput}
+            value={deleteConfirmText}
+            onChangeText={setDeleteConfirmText}
+            placeholder="Enter username to confirm"
+            placeholderTextColor="#999"
+            autoCapitalize="none"
+          />
+          
+          <View style={styles.modalButtons}>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.cancelButton]}
+              onPress={() => setDeleteModalVisible(false)}
+              disabled={isDeleting}
+            >
+              <Text style={styles.buttonText}>Cancel</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.modalButton, 
+                styles.confirmDeleteButton,
+                deleteConfirmText !== userToDelete?.username ? styles.disabledButton : null
+              ]}
+              onPress={handleDeleteUser}
+              disabled={isDeleting || deleteConfirmText !== userToDelete?.username}
+            >
+              <Text style={styles.buttonText}>
+                {isDeleting ? 'Deleting...' : 'Delete User'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  </LinearGradient>
+);
 }
 
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-    },
-    header: {
-      padding: 20,
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    headerTitle: {
-      fontSize: 22,
-      fontWeight: 'bold',
-      color: '#fff',
-    },
-    headerControls: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    createButton: {
-      backgroundColor: '#4CAF50',
-      padding: 10,
-      borderRadius: 5,
-    },
-    createButtonText: {
-      color: 'white',
-      fontWeight: 'bold',
-    },
-    // Search bar styles
-    searchContainer: {
-      marginHorizontal: 20,
-      marginBottom: 10,
-    },
-    searchBarWrapper: {
-      backgroundColor: 'rgba(255, 255, 255, 0.2)',
-      borderRadius: 8,
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 10,
-    },
-    searchInput: {
-      flex: 1,
-      height: 40,
-      color: 'white',
-      fontSize: 16,
-    },
-    clearButton: {
-      padding: 6,
-    },
-    clearButtonText: {
-      color: 'white',
-      fontSize: 16,
-    },
-    // Results count
-    resultsCountContainer: {
-      marginHorizontal: 20,
-      marginBottom: 10,
-    },
-    resultsCount: {
-      color: 'rgba(255, 255, 255, 0.7)',
-      fontSize: 14,
-      fontStyle: 'italic',
-    },
-    // Sort controls
-    sortContainer: {
-      marginHorizontal: 20,
-      marginBottom: 10,
-      padding: 10,
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      borderRadius: 8,
-    },
-    sortLabel: {
-      color: 'white',
-      fontWeight: 'bold',
-      marginBottom: 8,
-    },
-    sortButtons: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-    },
-    sortButton: {
-      backgroundColor: 'rgba(255, 255, 255, 0.2)',
-      paddingVertical: 6,
-      paddingHorizontal: 12,
-      borderRadius: 4,
-      marginRight: 8,
-      marginBottom: 8,
-    },
-    activeSortButton: {
-      backgroundColor: '#4682B4', // Steel blue
-    },
-    sortButtonText: {
-      color: 'white',
-    },
-    directionButton: {
-      backgroundColor: 'rgba(255, 255, 255, 0.2)',
-      paddingVertical: 6,
-      paddingHorizontal: 12,
-      borderRadius: 4,
-      marginLeft: 'auto',
-    },
-    userList: {
-      flex: 1,
-      padding: 10,
-    },
-    userCard: {
-      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-      borderRadius: 8,
-      padding: 15,
-      marginBottom: 10,
-    },
-    userInfo: {
-      marginBottom: 10,
-    },
-    username: {
-      fontSize: 18,
-      fontWeight: 'bold',
-    },
-    email: {
-      fontSize: 14,
-      color: '#666',
-      marginTop: 5,
-    },
-    adminStatus: {
-      marginTop: 5,
-      fontWeight: '500',
-    },
-    adminTrue: {
-      color: '#2e7d32',
-    },
-    adminFalse: {
-      color: '#666',
-    },
-    actionButtons: {
-      flexDirection: 'row',
-      justifyContent: 'flex-end',
-    },
-    actionButton: {
-      padding: 8,
-      borderRadius: 4,
-      marginLeft: 8,
-    },
-    viewButton: {
-      backgroundColor: '#2196f3',
-    },
-    editButton: {
-      backgroundColor: '#ff9800',
-    },
-    deleteButton: {
-      backgroundColor: '#f44336',
-    },
-    buttonText: {
-      color: 'white',
-      fontWeight: 'bold',
-    },
-    loadingText: {
-      color: '#ffffff',
-      fontSize: 18,
-      marginTop: 10,
-      textAlign: 'center',
-    },
-    errorText: {
-      color: '#ff4c4c',
-      fontSize: 18,
-      textAlign: 'center',
-      padding: 20,
-    },
-    noUsersText: {
-      fontSize: 16,
-      color: 'white',
-      textAlign: 'center',
-      marginTop: 20,
-    },
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    modalContent: {
-      backgroundColor: 'white',
-      width: '90%',
-      borderRadius: 10,
-      padding: 20,
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
-      elevation: 5,
-    },
-    modalTitle: {
-      fontSize: 20,
-      fontWeight: 'bold',
-      marginBottom: 20,
-      textAlign: 'center',
-    },
-    formGroup: {
-      marginBottom: 15,
-    },
-    label: {
-      fontSize: 16,
-      marginBottom: 5,
-      fontWeight: '500',
-    },
-    input: {
-      borderWidth: 1,
-      borderColor: '#ddd',
-      borderRadius: 5,
-      padding: 10,
-    },
-    modalButtons: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      marginTop: 20,
-    },
-    // Delete confirmation modal
-    modalText: {
-      fontSize: 16,
-      marginBottom: 20,
-      textAlign: 'center',
-      color: '#333',
-    },
-    modalLabel: {
-      fontSize: 14,
-      marginBottom: 10,
-      color: '#333',
-    },
-    modalInput: {
-      borderWidth: 1,
-      borderColor: '#ddd',
-      borderRadius: 5,
-      padding: 10,
-      marginBottom: 20,
-    },
-    modalButton: {
-      padding: 12,
-      borderRadius: 5,
-      alignItems: 'center',
-      flex: 1,
-      marginHorizontal: 5,
-    },
-    cancelButton: {
-      backgroundColor: '#808080',
-    },
-    confirmDeleteButton: {
-      backgroundColor: '#f44336',
-    },
-    disabledButton: {
-      backgroundColor: '#ffcccc',
-      opacity: 0.7,
-    },
-
-passwordError: {
+  // Layout and container styles
+  container: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  content: {
+    flex: 1,
+    padding: 20,
+    paddingHorizontal: 40,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingTop: 40,
+    paddingBottom: 20,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  headerControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  
+  // Button styles
+  button: {
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    backgroundColor: '#4da6ff',
+    marginTop: 20,
+    width: 200,
+    alignSelf: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  createButton: {
+    backgroundColor: '#4da6ff',
+    padding: 12,
+    borderRadius: 8,
+  },
+  
+  // Status indicators
+  loadingText: {
+    color: 'white',
+    fontSize: 18,
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  errorText: {
+    color: '#ff4c4c',
+    fontSize: 18,
+    textAlign: 'center',
+    padding: 20,
+  },
+  
+  // Search styles
+  searchContainer: {
+    marginBottom: 16,
+  },
+  searchBarWrapper: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    borderColor: '#4da6ff',
+    borderWidth: 1,
+  },
+  searchInput: {
+    flex: 1,
+    height: 44,
+    color: 'white',
+    fontSize: 16,
+  },
+  clearButton: {
+    padding: 8,
+  },
+  clearButtonText: {
+    color: 'white',
+    fontSize: 16,
+  },
+  
+  // Sort styles
+  sortContainer: {
+    marginBottom: 16,
+    padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    borderColor: '#4da6ff',
+    borderWidth: 1,
+  },
+  sortLabel: {
+    color: 'white',
+    fontWeight: 'bold',
+    marginBottom: 12,
+    fontSize: 16,
+  },
+  sortButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  sortButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginRight: 10,
+    marginBottom: 8,
+  },
+  activeSortButton: {
+    backgroundColor: '#4da6ff',
+  },
+  sortButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  directionButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginLeft: 'auto',
+  },
+  
+  // Results count
+  resultsCountContainer: {
+    marginBottom: 16,
+  },
+  resultsCount: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 14,
+  },
+  
+  // User list
+  userList: {
+    flex: 1,
+  },
+  noUsersText: {
+    fontSize: 16,
+    color: 'white',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  
+  // User card
+  userCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderColor: '#4da6ff',
+    borderWidth: 1,
+  },
+  userInfo: {
+    marginBottom: 16,
+  },
+  username: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  email: {
+    fontSize: 14,
+    color: '#e0e0e0',
+    marginTop: 4,
+  },
+  adminStatus: {
+    marginTop: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+    fontWeight: '500',
+  },
+  adminTrue: {
+    color: '#ffffff',
+    backgroundColor: 'rgba(46, 125, 50, 0.4)',
+  },
+  adminFalse: {
+    color: '#e0e0e0',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  
+  // Action buttons
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  actionButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  viewButton: {
+    backgroundColor: '#4da6ff',
+  },
+  editButton: {
+    backgroundColor: '#FF9800',
+  },
+  deleteButton: {
+    backgroundColor: '#f44336',
+  },
+  
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#333',
+    width: '90%',
+    maxWidth: 500,
+    borderRadius: 12,
+    padding: 20,
+    borderColor: '#4da6ff',
+    borderWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+    color: 'white',
+  },
+  modalText: {
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+    color: '#e0e0e0',
+  },
+  modalLabel: {
+    fontSize: 14,
+    marginBottom: 10,
+    color: '#e0e0e0',
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    color: 'white',
+  },
+  
+  // Form styles
+  formGroup: {
+    marginBottom: 15,
+  },
+  label: {
+    fontSize: 16,
+    marginBottom: 5,
+    fontWeight: '500',
+    color: '#e0e0e0',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 8,
+    padding: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    color: 'white',
+  },
+  
+  // Modal button styles
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  modalButton: {
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  cancelButton: {
+    backgroundColor: '#808080',
+  },
+  saveButton: {
+    backgroundColor: '#4da6ff',
+  },
+  confirmDeleteButton: {
+    backgroundColor: '#f44336',
+  },
+  disabledButton: {
+    backgroundColor: '#555',
+    opacity: 0.7,
+  },
+  
+  // Password validation styles
+  passwordError: {
     color: '#f44336',
     fontSize: 12,
     marginTop: 4,
   },
   passwordHint: {
     fontSize: 12,
-    color: '#666',
+    color: '#e0e0e0',
     marginTop: 4,
     fontStyle: 'italic',
   },
-  });
+});

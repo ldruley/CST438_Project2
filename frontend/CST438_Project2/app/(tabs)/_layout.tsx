@@ -16,7 +16,6 @@ const regularNavigationItems = [
   { name: 'welcome', title: 'Home', icon: 'house.fill' as SFSymbol },
   { name: 'tierlists', title: 'Your Tier Lists', icon: 'list.bullet' as SFSymbol },
   { name: 'public-tierlists', title: 'Public Tier Lists', icon: 'list.bullet' as SFSymbol },
-  { name: 'welcome', title: 'Tier List', icon: 'star.fill' as SFSymbol },
   { name: 'userProfile', title: 'User Profile', icon: 'person.fill' as SFSymbol },
 
 ];
