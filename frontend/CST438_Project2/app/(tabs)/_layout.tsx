@@ -13,7 +13,7 @@ type SFSymbol = 'house.fill' | 'list.bullet' | 'star.fill' | 'person.fill' | 'lo
 
 // Define navigation items for the menu
 const regularNavigationItems = [
-  { name: 'home', title: 'Home', icon: 'house.fill' as SFSymbol },
+  { name: 'welcome', title: 'Home', icon: 'house.fill' as SFSymbol },
   { name: 'tierlists', title: 'Your Tier Lists', icon: 'list.bullet' as SFSymbol },
   { name: 'public-tierlists', title: 'Public Tier Lists', icon: 'list.bullet' as SFSymbol },
   { name: 'welcome', title: 'Tier List', icon: 'star.fill' as SFSymbol },

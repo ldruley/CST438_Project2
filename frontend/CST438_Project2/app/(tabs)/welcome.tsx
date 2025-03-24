@@ -130,11 +130,6 @@ export default function WelcomeScreen() {
           >
             <Text style={styles.headerButtonText}>Public Lists</Text>
           </TouchableOpacity>
-
-
-          <TouchableOpacity style={[styles.headerButton, styles.logoutButton]} onPress={handleLogout}>
-            <Text style={styles.logoutButtonText}>Logout</Text>
-          </TouchableOpacity>
           </View>
         </View>
 

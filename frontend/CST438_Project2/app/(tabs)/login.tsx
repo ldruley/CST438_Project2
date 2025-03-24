@@ -118,7 +118,7 @@ const Login: React.FC = () => {
       setError('');
       
       // Navigate to home screen
-      router.replace('/home');
+      router.replace('/welcome');
     } catch (err) {
       console.error('Login error:', err);
       setError('Network error. Please check your connection and try again.');

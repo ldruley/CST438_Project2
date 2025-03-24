@@ -291,9 +291,6 @@ const TierlistsScreen: React.FC = () => {
                     >
                         <Text style={styles.headerButtonText}>Public Lists</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.headerButton, styles.logoutButton]} onPress={handleLogout}>
-                        <Text style={styles.logoutButtonText}>Logout</Text>
-                    </TouchableOpacity>
                 </View>
             </View>
 
