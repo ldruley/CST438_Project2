@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import API_CONFIG from "@/config/api";
 
 // Define the type for SFSymbols to fix the icon error
 type SFSymbol = 'house.fill' | 'list.bullet' | 'star.fill' | 'person.fill' | 'lock.fill';
@@ -58,7 +59,7 @@ function ExpandableMenuHeader() {
       AsyncStorage.getItem('jwtToken')
         .then(token => {
           if (token) {
-            fetch('http://localhost:8080/auth/logout', {
+            fetch(`${API_CONFIG.BASE_URL}/auth/logout`, {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${token}`,
@@ -89,7 +90,7 @@ function ExpandableMenuHeader() {
         return;
       }
       
-      const response = await fetch('http://localhost:8080/api/users/isAdmin', {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/users/isAdmin`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`

@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, TextInput, Button, ScrollView, ActivityIndicato
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
+import API_CONFIG from '@/config/api';
 
 interface UserData {
   id: number;
@@ -170,7 +171,7 @@ export default function AdminScreen() {
         return;
       }
       
-      const response = await fetch('http://localhost:8080/api/users/isAdmin', {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/users/isAdmin`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -211,7 +212,7 @@ export default function AdminScreen() {
         return;
       }
       
-      const response = await fetch('http://localhost:8080/api/users', {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/users`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -278,7 +279,7 @@ export default function AdminScreen() {
     }
   
     try {
-      const url = `http://localhost:8080/auth/register?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+      const url = `${API_CONFIG.BASE_URL}/auth/register?username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
       
       const response = await fetch(url, {
         method: 'POST',
@@ -330,7 +331,7 @@ export default function AdminScreen() {
         updates.password = password;
       }
 
-      const response = await fetch(`http://localhost:8080/api/users?username=${selectedUser.username}`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/users?username=${selectedUser.username}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -387,7 +388,7 @@ export default function AdminScreen() {
         return;
       }
       
-      const response = await fetch(`http://localhost:8080/api/users/deleteUser/${userToDelete.id}`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/users/deleteUser/${userToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

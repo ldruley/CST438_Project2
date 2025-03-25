@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { View, Text, StyleSheet, TextInput, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import API_CONFIG from "@/config/api";
 
 interface UserCredentials {
   username: string;
@@ -105,7 +106,7 @@ const CreateAccount: React.FC = () => {
       params.append('email', email);
       params.append('password', password);
       
-      const createResponse = await fetch('http://localhost:8080/auth/register', {
+      const createResponse = await fetch(`${API_CONFIG.BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

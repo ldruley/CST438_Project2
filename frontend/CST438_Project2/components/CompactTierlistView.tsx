@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { TIER_COLORS, TIER_RANKS, Item, Tier } from '@/types/tierlist';
 import CustomAlert from '@/components/CustomAlert';
+import API_CONFIG from "@/config/api";
 
 interface TierRowProps {
   tierName: string;
@@ -94,7 +95,7 @@ const CompactTierlistView: React.FC<CompactTierlistViewProps> = ({ tierlistId, j
 
     try {
       setIsLoading(true);
-      const response = await fetch(`http://localhost:8080/api/tiers/${tierlistId}/items`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/tiers/${tierlistId}/items`, {
         headers: {
           'Authorization': `Bearer ${jwtToken}`,
           'Content-Type': 'application/json'

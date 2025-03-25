@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Tierlist } from '@/types/tierlist';
 import TierlistCard from '@/components/TierlistCard';
 import CustomAlert from '@/components/CustomAlert';
+import API_CONFIG from "@/config/api";
 
 const PublicTierlistsScreen = () => {
     const router = useRouter();
@@ -88,7 +89,7 @@ const PublicTierlistsScreen = () => {
             console.log(`Fetching public tierlists with token: ${token?.substring(0, 10)}...`);
 
             // Fetch public tierlists
-            const response = await fetch("http://localhost:8080/api/tiers/public", {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/api/tiers/public`, {
                 method: "GET",
                 headers: {
                     'Authorization': `Bearer ${token}`,

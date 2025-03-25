@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Tierlist } from '@/types/tierlist';
 import CompactTierlistView from '@/components/CompactTierlistView';
 import { MaterialIcons } from '@expo/vector-icons';
+import API_CONFIG from '@/config/api';
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -54,7 +55,7 @@ export default function WelcomeScreen() {
     try {
       console.log("Checking admin status...");
       
-      const response = await fetch('http://localhost:8080/api/users/isAdmin', {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/users/isAdmin`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -85,7 +86,7 @@ export default function WelcomeScreen() {
   const fetchActiveTierlist = async (token: string, uid: number) => {
     try {
       // First check if user has an active tierlist
-      const activeResponse = await fetch(`http://localhost:8080/api/users/${uid}/activetier`, {
+      const activeResponse = await fetch(`${API_CONFIG.BASE_URL}/api/users/${uid}/activetier`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -103,7 +104,7 @@ export default function WelcomeScreen() {
       }
 
       // Then fetch the tierlist details
-      const tierlistResponse = await fetch(`http://localhost:8080/api/tiers/${activeData.activeTierlistId}`, {
+      const tierlistResponse = await fetch(`${API_CONFIG.BASE_URL}/api/tiers/${activeData.activeTierlistId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

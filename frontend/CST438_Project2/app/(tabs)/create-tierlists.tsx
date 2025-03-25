@@ -5,6 +5,7 @@ import { Stack, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Tier, TIER_COLORS } from '@/types/tierlist';
 import CustomAlert from '@/components/CustomAlert';
+import API_CONFIG from '@/config/api';
 
 export default function CreateTierlistScreen() {
     return (
@@ -75,7 +76,7 @@ const CreateTierlistContent: React.FC = () => {
 
                     // Check if user has an active tierlist
                     try {
-                        const response = await fetch(`http://localhost:8080/api/users/${uid}/hasactivetier`, {
+                        const response = await fetch(`${API_CONFIG.BASE_URL}/api/users/${uid}/hasactivetier`, {
                             headers: {
                                 'Authorization': `Bearer ${token}`,
                             },
@@ -140,7 +141,7 @@ const CreateTierlistContent: React.FC = () => {
                 userId
             }));
 
-            const tierlistResponse = await fetch(`http://localhost:8080/api/tiers/user/${userId}`, {
+            const tierlistResponse = await fetch(`${API_CONFIG.BASE_URL}/api/tiers/user/${userId}`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${jwtToken}`,
@@ -168,7 +169,7 @@ const CreateTierlistContent: React.FC = () => {
             // If makeActive is true, set this as the active tierlist
             if (makeActive) {
                 try {
-                    const activeResponse = await fetch(`http://localhost:8080/api/users/${userId}/activetier/${tierlist.id}`, {
+                    const activeResponse = await fetch(`${API_CONFIG.BASE_URL}/api/users/${userId}/activetier/${tierlist.id}`, {
                         method: 'PUT',
                         headers: {
                             'Authorization': `Bearer ${jwtToken}`,

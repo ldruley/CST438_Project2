@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import TierList from '@/components/TierList';
 import { Item, Tier, Tierlist } from '@/types/tierlist';
+import API_CONFIG from "@/config/api";
 
 const TierlistView: React.FC = () => {
     const params = useLocalSearchParams();
@@ -45,7 +46,7 @@ const TierlistView: React.FC = () => {
         const fetchTierlist = async () => {
             setIsLoading(true);
             try {
-                const response = await fetch(`http://localhost:8080/api/tiers/${tierlistId}`, {
+                const response = await fetch(`${API_CONFIG.BASE_URL}/api/tiers/${tierlistId}`, {
                     headers: {
                         'Authorization': `Bearer ${jwtToken}`,
                     },
@@ -90,7 +91,7 @@ const TierlistView: React.FC = () => {
 
     const fetchItems = async (tierId: string) => {
         try {
-            const response = await fetch(`http://localhost:8080/api/tiers/${tierId}/items`, {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/api/tiers/${tierId}/items`, {
                 headers: {
                     'Authorization': `Bearer ${jwtToken}`,
                 },
@@ -120,7 +121,7 @@ const TierlistView: React.FC = () => {
         try {
             const newRank = direction === 'up' ? Math.max(1, item.rank - 1) : item.rank + 1;
 
-            const response = await fetch(`http://localhost:8080/api/items/${item.id}/rank/${newRank}`, {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/api/items/${item.id}/rank/${newRank}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${jwtToken}`,
@@ -144,7 +145,7 @@ const TierlistView: React.FC = () => {
 
     const handleItemDelete = async (item: Item) => {
         try {
-            const response = await fetch(`http://localhost:8080/api/items/${item.id}`, {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/api/items/${item.id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${jwtToken}`,
@@ -167,7 +168,7 @@ const TierlistView: React.FC = () => {
 
     const handleItemAdd = async (tierId: number, name: string) => {
         try {
-            const response = await fetch(`http://localhost:8080/api/items`, {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/api/items`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${jwtToken}`,

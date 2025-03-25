@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import TierList from '@/components/TierList';
 import { Item, Tier, Tierlist, TIER_RANKS, TIER_COLORS } from '@/types/tierlist';
 import CustomAlert from '@/components/CustomAlert';
+import API_CONFIG from "@/config/api";
 
 const TierlistView: React.FC = () => {
     const params = useLocalSearchParams();
@@ -96,7 +97,7 @@ const TierlistView: React.FC = () => {
 
         try {
             console.log('Fetching tierlist data for ID:', tierlistId);
-            const response = await fetch(`http://localhost:8080/api/tiers/${tierlistId}`, {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/api/tiers/${tierlistId}`, {
                 headers: {
                     'Authorization': `Bearer ${jwtToken}`,
                 },
@@ -127,7 +128,7 @@ const TierlistView: React.FC = () => {
 
     const fetchItems = async (tierId: string) => {
         try {
-            const response = await fetch(`http://localhost:8080/api/tiers/${tierId}/items`, {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/api/tiers/${tierId}/items`, {
                 headers: {
                     'Authorization': `Bearer ${jwtToken}`,
                 },
@@ -160,7 +161,7 @@ const TierlistView: React.FC = () => {
         try {
             const newRank = direction === 'up' ? Math.max(1, item.rank - 1) : Math.min(7, item.rank + 1);
 
-            const response = await fetch(`http://localhost:8080/api/items/${item.id}/rank/${newRank}`, {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/api/items/${item.id}/rank/${newRank}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${jwtToken}`,
@@ -198,7 +199,7 @@ const TierlistView: React.FC = () => {
                         style: 'destructive',
                         onPress: async () => {
                             try {
-                                const response = await fetch(`http://localhost:8080/api/items/${item.id}`, {
+                                const response = await fetch(`${API_CONFIG.BASE_URL}/api/items/${item.id}`, {
                                     method: 'DELETE',
                                     headers: {
                                         'Authorization': `Bearer ${jwtToken}`,
@@ -231,7 +232,7 @@ const TierlistView: React.FC = () => {
         try {
             // The tierId in our component corresponds directly to the rank in the database
             // S+ tier (id 1) = rank 1, S tier (id 2) = rank 2, etc.
-            const response = await fetch(`http://localhost:8080/api/items`, {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/api/items`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${jwtToken}`,

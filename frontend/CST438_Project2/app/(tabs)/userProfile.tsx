@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TextInput, Alert, ScrollView, ActivityIndicator
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter, useFocusEffect } from 'expo-router';
+import API_CONFIG from "@/config/api";
 
 /**
  * Interface defining user data structure
@@ -108,7 +109,7 @@ const UserProfile: React.FC = () => {
       
       try {
         // Attempt to fetch user data from API
-        const response = await fetch('http://localhost:8080/api/users/current', {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/api/users/current`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -190,7 +191,7 @@ const UserProfile: React.FC = () => {
       };
       
       // Send update request to API
-      const response = await fetch(`http://localhost:8080/api/users/${userData.id}`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/users/${userData.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -276,7 +277,7 @@ const UserProfile: React.FC = () => {
       };
       
       // Send password update request
-      const response = await fetch(`http://localhost:8080/api/users/${userData.id}/password`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/users/${userData.id}/password`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -356,7 +357,7 @@ const UserProfile: React.FC = () => {
       
       try {
         // Send delete request to API
-        const deleteResponse = await fetch(`http://localhost:8080/api/users/deleteUser/${userData.id}`, {
+        const deleteResponse = await fetch(`${API_CONFIG.BASE_URL}/api/users/deleteUser/${userData.id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -419,7 +420,7 @@ const UserProfile: React.FC = () => {
       // Notify server about logout if token exists
       if (token) {
         try {
-          await fetch('http://localhost:8080/auth/logout', {
+          await fetch(`${API_CONFIG.BASE_URL}/auth/logout`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`

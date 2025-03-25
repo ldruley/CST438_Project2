@@ -8,6 +8,7 @@ import { Tierlist } from '@/types/tierlist';
 import CompactTierlistView from '@/components/CompactTierlistView';
 import TierlistCard from '@/components/TierlistCard';
 import CustomAlert from '@/components/CustomAlert';
+import API_CONFIG from '@/config/api';
 
 const TierlistsScreen: React.FC = () => {
     const router = useRouter();
@@ -109,7 +110,7 @@ const TierlistsScreen: React.FC = () => {
             console.log(`Fetching tierlists for user ID: ${uid} with token: ${token?.substring(0, 10)}...`);
 
             // Fetch user's tierlists
-            const response = await fetch(`http://localhost:8080/api/tiers/user/${uid}`, {
+            const response = await fetch(`${API_CONFIG.BASE_URL}api/tiers/user/${uid}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -151,7 +152,7 @@ const TierlistsScreen: React.FC = () => {
     const fetchActiveTierlist = async (token: string, uid: number) => {
         try {
             // First check if user has an active tierlist
-            const response = await fetch(`http://localhost:8080/api/users/${uid}/activetier`, {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/api/users/${uid}/activetier`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -166,7 +167,7 @@ const TierlistsScreen: React.FC = () => {
                     console.log(`Active tierlist ID: ${data.activeTierlistId}`);
 
                     // Fetch the actual tierlist details
-                    const tierlistResponse = await fetch(`http://localhost:8080/api/tiers/${data.activeTierlistId}`, {
+                    const tierlistResponse = await fetch(`${API_CONFIG.BASE_URL}/api/tiers/${data.activeTierlistId}`, {
                         headers: {
                             'Authorization': `Bearer ${token}`,
                         },
@@ -214,7 +215,7 @@ const TierlistsScreen: React.FC = () => {
                         text: 'Set as Active',
                         onPress: async () => {
                             try {
-                                const response = await fetch(`http://localhost:8080/api/users/${userId}/activetier/${tierlistId}`, {
+                                const response = await fetch(`${API_CONFIG.BASE_URL}/api/users/${userId}/activetier/${tierlistId}`, {
                                     method: 'PUT',
                                     headers: {
                                         'Authorization': `Bearer ${jwtToken}`,

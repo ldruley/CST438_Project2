@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { View, Text, StyleSheet, TextInput, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import API_CONFIG from '@/config/api';
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState<string>('');
@@ -62,7 +63,7 @@ const Login: React.FC = () => {
       formData.append('password', password);
   
       console.log('Attempting login for:', username);
-      const response = await fetch('http://localhost:8080/auth/login', {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

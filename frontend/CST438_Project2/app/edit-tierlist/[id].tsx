@@ -4,7 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Tierlist } from '@/types/tierlist';
-import CustomAlert from '@/components/CustomAlert'; // Import the custom alert component
+import CustomAlert from '@/components/CustomAlert';
+import API_CONFIG from "@/config/api"; // Import the custom alert component
 
 export default function EditTierlistScreen() {
     return (
@@ -77,7 +78,7 @@ const EditTierlistContent: React.FC = () => {
             setIsLoading(true);
             try {
                 // Fetch tierlist data
-                const response = await fetch(`http://localhost:8080/api/tiers/${tierlistId}`, {
+                const response = await fetch(`${API_CONFIG.BASE_URL}/api/tiers/${tierlistId}`, {
                     headers: {
                         'Authorization': `Bearer ${jwtToken}`,
                     },
@@ -105,7 +106,7 @@ const EditTierlistContent: React.FC = () => {
                 console.log('Setting isPublic to:', data.isPublic);
 
                 // Check if this is the active tierlist
-                const activeResponse = await fetch(`http://localhost:8080/api/users/${userId}/activetier`, {
+                const activeResponse = await fetch(`${API_CONFIG.BASE_URL}/api/users/${userId}/activetier`, {
                     headers: {
                         'Authorization': `Bearer ${jwtToken}`,
                     },
@@ -148,7 +149,7 @@ const EditTierlistContent: React.FC = () => {
 
         setIsSettingActive(true);
         try {
-            const response = await fetch(`http://localhost:8080/api/users/${userId}/activetier/${tierlistId}`, {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/api/users/${userId}/activetier/${tierlistId}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${jwtToken}`,
@@ -190,7 +191,7 @@ const EditTierlistContent: React.FC = () => {
             console.log('isPublic:', isPublic);
 
             // Update the tierlist
-            const tierlistResponse = await fetch(`http://localhost:8080/api/tiers/${tierlistId}`, {
+            const tierlistResponse = await fetch(`${API_CONFIG.BASE_URL}/api/tiers/${tierlistId}`, {
                 method: 'PATCH', // Using PATCH instead of PUT to update only specific fields
                 headers: {
                     'Authorization': `Bearer ${jwtToken}`,
@@ -258,7 +259,7 @@ const EditTierlistContent: React.FC = () => {
             console.log('Deleting tierlist with ID:', tierlistId);
 
             // Check if tierlist has items
-            const itemsResponse = await fetch(`http://localhost:8080/api/tiers/${tierlistId}/items`, {
+            const itemsResponse = await fetch(`${API_CONFIG.BASE_URL}/api/tiers/${tierlistId}/items`, {
                 headers: {
                     'Authorization': `Bearer ${jwtToken}`,
                 },
@@ -272,7 +273,7 @@ const EditTierlistContent: React.FC = () => {
 
                     // Delete items one by one
                     for (const item of items) {
-                        await fetch(`http://localhost:8080/api/items/${item.id}`, {
+                        await fetch(`${API_CONFIG.BASE_URL}/api/items/${item.id}`, {
                             method: 'DELETE',
                             headers: {
                                 'Authorization': `Bearer ${jwtToken}`,
@@ -284,7 +285,7 @@ const EditTierlistContent: React.FC = () => {
 
             // Now delete the tierlist
             console.log('Sending DELETE request to endpoint...');
-            const response = await fetch(`http://localhost:8080/api/tiers/${tierlistId}`, {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/api/tiers/${tierlistId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${jwtToken}`,
