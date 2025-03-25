@@ -110,7 +110,7 @@ const TierlistsScreen: React.FC = () => {
             console.log(`Fetching tierlists for user ID: ${uid} with token: ${token?.substring(0, 10)}...`);
 
             // Fetch user's tierlists
-            const response = await fetch(`${API_CONFIG.BASE_URL}api/tiers/user/${uid}`, {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/api/tiers/user/${uid}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
